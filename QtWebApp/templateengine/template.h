@@ -14,6 +14,8 @@
 #include <QString>
 #include "templateglobal.h"
 
+namespace stefanfrings {
+
 /**
  Enhanced version of QString for template processing. Templates
  are usually loaded from files, but may also be loaded from
@@ -91,7 +93,7 @@ class DECLSPEC Template : public QString {
 public:
 
     Template();
-
+    
     /**
       Constructor that reads the template from a string.
       @param source The template source text
@@ -166,5 +168,7 @@ private:
     /** Enables warnings, if true */
     bool warnings;
 };
+
+} // end of namespace
 
 #endif // TEMPLATE_H

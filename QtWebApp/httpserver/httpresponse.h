@@ -12,6 +12,8 @@
 #include "httpglobal.h"
 #include "httpcookie.h"
 
+namespace stefanfrings {
+
 /**
   This object represents a HTTP response, used to return something to the web client.
   <p>
@@ -98,8 +100,8 @@ public:
     */
     void setCookie(const HttpCookie& cookie);
 
-    QTcpSocket *getSocket() const {return socket;}
-    
+    QTcpSocket *getSocket() const { return socket; }
+
     /**
       Send a redirect response to the browser.
       Cannot be combined with write().
@@ -157,5 +159,7 @@ private:
     void writeHeaders();
 
 };
+
+} // end of namespace
 
 #endif // HTTPRESPONSE_H
