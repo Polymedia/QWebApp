@@ -14,7 +14,7 @@ void DumpController::service(HttpRequest& request, HttpResponse& response)
 {
 
     response.setHeader("Content-Type", "text/html; charset=ISO-8859-1");
-    response.setCookie(HttpCookie("firstCookie","hello",600));
+    response.setCookie(HttpCookie("firstCookie","hello",600,QByteArray(),QByteArray(),QByteArray(),false,true));
     response.setCookie(HttpCookie("secondCookie","world",600));
 
     QByteArray body("<html><body>");
