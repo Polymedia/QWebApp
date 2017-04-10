@@ -8,6 +8,11 @@
 
 using namespace stefanfrings;
 
+Template::Template()
+    : QString()
+{
+}
+
 Template::Template(QString source, QString sourceName)
     : QString(source)
 {
