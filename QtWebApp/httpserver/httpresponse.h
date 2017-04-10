@@ -100,6 +100,8 @@ public:
     */
     void setCookie(const HttpCookie& cookie);
 
+    QTcpSocket *getSocket() const { return socket; }
+
     /**
       Send a redirect response to the browser.
       Cannot be combined with write().
