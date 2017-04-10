@@ -6,6 +6,8 @@
 #include "httpconnectionhandler.h"
 #include "httpresponse.h"
 
+using namespace stefanfrings;
+
 HttpConnectionHandler::HttpConnectionHandler(QSettings* settings, HttpRequestHandler* requestHandler, QSslConfiguration* sslConfiguration)
     : QThread()
 {
@@ -177,7 +179,7 @@ void HttpConnectionHandler::read()
         }
 
         // If the request is aborted, return error message and close the connection
-        if (currentRequest && currentRequest->getStatus()==HttpRequest::abort)
+        if (currentRequest->getStatus()==HttpRequest::abort)
         {
             socket->write("HTTP/1.1 413 entity too large\r\nConnection: close\r\n\r\n413 Entity too large\r\n");
             socket->flush();
