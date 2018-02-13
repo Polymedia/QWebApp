@@ -420,31 +420,17 @@ void HttpRequest::parseMultiPartFile()
             {
                 if (line.contains("form-data"))
                 {
-                    int start=line.indexOf(" name=");
-                    int end=line.indexOf(";", start + 7);
-                    if (end < 0)
-                        end = line.size();
+                    int start=line.indexOf(" name=\"");
+                    int end=line.indexOf("\"",start+7);
                     if (start>=0 && end>=start)
                     {
-                        if (line.at(start+6)=='"' && line.at(end-1)=='"')
-                        {
-                            ++start;
-                            --end;
-                        }
-                        fieldName=line.mid(start+6,end-start-6);
+                        fieldName=line.mid(start+7,end-start-7);
                     }
-                    start=line.indexOf(" filename=");
-                    end=line.indexOf(";", start + 11);
-                    if (end < 0)
-                        end = line.size();
+                    start=line.indexOf(" filename=\"");
+                    end=line.indexOf("\"",start+11);
                     if (start>=0 && end>=start)
                     {
-                        if (line.at(start+10)=='"' && line.at(end-1)=='"')
-                        {
-                            ++start;
-                            --end;
-                        }
-                        fileName=line.mid(start+10,end-start-10);
+                        fileName=line.mid(start+11,end-start-11);
                     }
                     #ifdef SUPERVERBOSE
                         qDebug("HttpRequest: multipart field=%s, filename=%s",fieldName.data(),fileName.data());

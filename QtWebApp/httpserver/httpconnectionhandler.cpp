@@ -135,7 +135,7 @@ void HttpConnectionHandler::readTimeout()
     //Commented out because QWebView cannot handle this.
     //socket->write("HTTP/1.1 408 request timeout\r\nConnection: close\r\n\r\n408 request timeout\r\n");
 
-    socket->flush();
+    while(socket->bytesToWrite()) socket->waitForBytesWritten();
     socket->disconnectFromHost();
     delete currentRequest;
     currentRequest=0;
@@ -179,10 +179,10 @@ void HttpConnectionHandler::read()
         }
 
         // If the request is aborted, return error message and close the connection
-        if (currentRequest && currentRequest->getStatus()==HttpRequest::abort)
+        if (currentRequest->getStatus()==HttpRequest::abort)
         {
             socket->write("HTTP/1.1 413 entity too large\r\nConnection: close\r\n\r\n413 Entity too large\r\n");
-            socket->flush();
+            while(socket->bytesToWrite()) socket->waitForBytesWritten();
             socket->disconnectFromHost();
             delete currentRequest;
             currentRequest=0;
@@ -261,7 +261,7 @@ void HttpConnectionHandler::read()
             // Close the connection or prepare for the next request on the same connection.
             if (closeConnection)
             {
-                socket->flush();
+                while(socket->bytesToWrite()) socket->waitForBytesWritten();
                 socket->disconnectFromHost();
             }
             else
