@@ -180,6 +180,9 @@ void StaticFileController::setContentType(QString fileName, HttpResponse& respon
         response.setHeader("Content-Type", "application/font-otf");
     }
     // Todo: add all of your content types
+    else if (fileName.endsWith(".exe")) {
+        response.setHeader("Content-Type", "application/exe");
+    }
     else
     {
         qDebug("StaticFileController: unknown MIME type for filename '%s'", qPrintable(fileName));

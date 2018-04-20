@@ -7,6 +7,7 @@
 #include "httpconnectionhandler.h"
 #include "httpconnectionhandlerpool.h"
 #include <QCoreApplication>
+#include <QNetworkProxy>
 
 using namespace stefanfrings;
 
@@ -40,6 +41,7 @@ void HttpListener::listen()
     }
     QString host = settings->value("host").toString();
     int port=settings->value("port").toInt();
+    setProxy(QNetworkProxy(QNetworkProxy::NoProxy));
     QTcpServer::listen(host.isEmpty() ? QHostAddress::Any : QHostAddress(host), port);
     if (!isListening())
     {
