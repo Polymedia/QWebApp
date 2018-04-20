@@ -60,7 +60,8 @@ void StaticFileController::service(HttpRequest& request, HttpResponse& response)
         // The file is not in cache.
         qDebug("StaticFileController: Cache miss for %s",path.data());
         // Forbid access to files outside the docroot directory
-        if (path.contains("/.."))
+        if (path.contains("/..") || path.contains("/\\..") ||
+                QFileInfo(docroot+path).filePath() != QFileInfo(docroot+path).absoluteFilePath())
         {
             qWarning("StaticFileController: detected forbidden characters in path %s",path.data());
             response.setStatus(403,"forbidden");
