@@ -175,7 +175,7 @@ void HttpConnectionHandler::read()
         }
 
         // If the request is aborted, return error message and close the connection
-        if (currentRequest->getStatus()==HttpRequest::abort)
+        if (currentRequest && currentRequest->getStatus()==HttpRequest::abort)
         {
             socket->write("HTTP/1.1 413 entity too large\r\nConnection: close\r\n\r\n413 Entity too large\r\n");
             while(socket->bytesToWrite()) socket->waitForBytesWritten();
@@ -186,7 +186,7 @@ void HttpConnectionHandler::read()
         }
 
         // If the request is complete, let the request mapper dispatch it
-        if (currentRequest->getStatus()==HttpRequest::complete)
+        if (currentRequest && currentRequest->getStatus()==HttpRequest::complete)
         {
             readTimer.stop();
             qDebug("HttpConnectionHandler (%p): received request",static_cast<void*>(this));
