@@ -194,13 +194,13 @@ private:
     int maxSize;
 
     /** Maximum allowed size of multipart forms in bytes. */
-    int maxMultiPartSize;
+    qint64 maxMultiPartSize;
 
     /** Current size */
     int currentSize;
 
     /** Expected size of body */
-    int expectedBodySize;
+    qint64 expectedBodySize;
 
     /** Name of the current header, or empty if no header is being processed */
     QByteArray currentHeader;

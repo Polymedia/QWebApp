@@ -16,7 +16,7 @@ HttpRequest::HttpRequest(const QSettings* settings)
     currentSize=0;
     expectedBodySize=0;
     maxSize=settings->value("maxRequestSize","16000").toInt();
-    maxMultiPartSize=settings->value("maxMultiPartSize","1000000").toInt();
+    maxMultiPartSize=settings->value("maxMultiPartSize","1000000").toLongLong();
     tempFile=nullptr;
 }
 
@@ -117,7 +117,7 @@ void HttpRequest::readHeader(QTcpSocket* socket)
         QByteArray contentLength=headers.value("content-length");
         if (!contentLength.isEmpty())
         {
-            expectedBodySize=contentLength.toInt();
+            expectedBodySize=contentLength.toLongLong();
         }
         if (expectedBodySize==0)
         {
@@ -138,7 +138,7 @@ void HttpRequest::readHeader(QTcpSocket* socket)
         }
         else {
             #ifdef SUPERVERBOSE
-                qDebug("HttpRequest: expect %i bytes body",expectedBodySize);
+                qDebug("HttpRequest: expect %lld bytes body",expectedBodySize);
             #endif
             status=waitForBody;
         }
@@ -301,6 +301,9 @@ void HttpRequest::readFromSocket(QTcpSocket* socket)
     {
         readBody(socket);
     }
+	// Warning!!!
+	// currentSize - int; maxMultiPartSize - qint64
+	// Comparetion "currentSize>maxMultiPartSize" might work incorrectly when maxMultiPartSize >= MAX_INT
     if ((boundary.isEmpty() && currentSize>maxSize) || (!boundary.isEmpty() && currentSize>maxMultiPartSize))
     {
         qWarning("HttpRequest: received too many bytes");
