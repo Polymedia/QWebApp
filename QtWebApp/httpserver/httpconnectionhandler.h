@@ -65,7 +65,7 @@ public:
     virtual ~HttpConnectionHandler();
 
     /** Returns true, if this handler is in use. */
-    bool isBusy();
+    bool isBusy() const;
 
     /** Mark this handler as busy */
     void setBusy();
@@ -105,7 +105,7 @@ public slots:
       Received from from the listener, when the handler shall start processing a new connection.
       @param socketDescriptor references the accepted connection.
     */
-    void handleConnection(const tSocketDescriptor socketDescriptor);
+    void handleConnection(const tSocketDescriptor &socketDescriptor);
 
 private slots:
 

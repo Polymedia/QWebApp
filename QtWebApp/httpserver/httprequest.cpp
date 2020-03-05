@@ -17,7 +17,6 @@ HttpRequest::HttpRequest(const QSettings* settings)
     expectedBodySize=0;
     maxSize=settings->value("maxRequestSize","16000").toInt();
     maxMultiPartSize=settings->value("maxMultiPartSize","1000000").toInt();
-    tempFile=nullptr;
 }
 
 
@@ -170,9 +169,9 @@ void HttpRequest::readBody(QTcpSocket* socket)
             qDebug("HttpRequest: receiving multipart body");
         #endif
         // Create an object for the temporary file, if not already present
-        if (tempFile == nullptr)
+        if (!tempFile)
         {
-            tempFile = new QTemporaryFile;
+            tempFile.reset(new QTemporaryFile{});
         }
         if (!tempFile->isOpen())
         {
@@ -464,7 +463,7 @@ void HttpRequest::parseMultiPartFile()
         #ifdef SUPERVERBOSE
             qDebug("HttpRequest: reading multpart data");
         #endif
-        QTemporaryFile* uploadedFile=nullptr;
+        std::shared_ptr<QTemporaryFile> uploadedFile;
         QByteArray fieldValue;
         while (!tempFile->atEnd() && !finished && !tempFile->error())
         {
@@ -493,8 +492,8 @@ void HttpRequest::parseMultiPartFile()
                         uploadedFile->seek(0);
                         parameters.insert(fieldName,fileName);
                         qDebug("HttpRequest: set parameter %s=%s",fieldName.data(),fileName.data());
-                        uploadedFiles.insert(fieldName,uploadedFile);
-                        qDebug("HttpRequest: uploaded file size is %lli",uploadedFile->size());
+                        uploadedFiles.insert(fieldName, uploadedFile);
+                        qDebug("HttpRequest: uploaded file size is %i", (int) uploadedFile->size());
                     }
                     else
                     {
@@ -520,7 +519,7 @@ void HttpRequest::parseMultiPartFile()
                     // this is a file
                     if (!uploadedFile)
                     {
-                        uploadedFile=new QTemporaryFile();
+                        uploadedFile.reset(new QTemporaryFile());
                         uploadedFile->open();
                     }
                     uploadedFile->write(line);
@@ -543,28 +542,15 @@ void HttpRequest::parseMultiPartFile()
 
 HttpRequest::~HttpRequest()
 {
-    foreach(QByteArray key, uploadedFiles.keys())
-    {
-        QTemporaryFile* file=uploadedFiles.value(key);
-        if (file->isOpen())
-        {
-            file->close();
-        }
-        delete file;
-    }
-    if (tempFile != nullptr)
-    {
-        if (tempFile->isOpen())
-        {
-            tempFile->close();
-        }
-        delete tempFile;
-    }
 }
 
-QTemporaryFile* HttpRequest::getUploadedFile(const QByteArray fieldName) const
+QTemporaryFile* HttpRequest::getUploadedFile(const QByteArray &fieldName) const
 {
-    return uploadedFiles.value(fieldName);
+    auto it = uploadedFiles.find(fieldName);
+    if (uploadedFiles.end() == it)
+        return nullptr;
+
+    return it->get();
 }
 
 QByteArray HttpRequest::getCookie(const QByteArray& name) const

@@ -16,6 +16,8 @@
 #include <QUuid>
 #include "httpglobal.h"
 
+#include <memory>
+
 namespace stefanfrings {
 
 /**
@@ -36,7 +38,7 @@ namespace stefanfrings {
 */
 
 class DECLSPEC HttpRequest {
-    Q_DISABLE_COPY(HttpRequest)
+//    Q_DISABLE_COPY(HttpRequest)
     friend class HttpSessionStore;
 
 public:
@@ -137,7 +139,7 @@ public:
       For uploaded files, the method getParameters() returns
       the original fileName as provided by the calling web browser.
     */
-    QTemporaryFile* getUploadedFile(const QByteArray fieldName) const;
+    QTemporaryFile* getUploadedFile(const QByteArray &fieldName) const;
 
     /**
       Get the value of a cookie.
@@ -164,7 +166,7 @@ private:
     QMultiMap<QByteArray,QByteArray> parameters;
 
     /** Uploaded files of the request, key is the field name. */
-    QMap<QByteArray,QTemporaryFile*> uploadedFiles;
+    QMap<QByteArray, std::shared_ptr<QTemporaryFile>> uploadedFiles;
 
     /** Received cookies */
     QMap<QByteArray,QByteArray> cookies;
@@ -209,7 +211,7 @@ private:
     QByteArray boundary;
 
     /** Temp file, that is used to store the multipart/form-data body */
-    QTemporaryFile* tempFile;
+    std::shared_ptr<QTemporaryFile> tempFile;
 
     /** Parse the multipart body, that has been stored in the temp file. */
     void parseMultiPartFile();
