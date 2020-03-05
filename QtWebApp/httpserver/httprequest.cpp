@@ -241,7 +241,7 @@ void HttpRequest::decodeRequestParams()
     }
     // Split the parameters into pairs of value and name
     QList<QByteArray> list=rawParameters.split('&');
-    foreach (const QByteArray &part, list)
+    foreach (const QByteArray& part, list)
     {
         int equalsChar=part.indexOf('=');
         if (equalsChar>=0)
@@ -266,7 +266,7 @@ void HttpRequest::extractCookies()
     foreach(QByteArray cookieStr, headers.values("cookie"))
     {
         QList<QByteArray> list=HttpCookie::splitCSV(cookieStr);
-        foreach(const QByteArray &part, list)
+        foreach(const QByteArray& part, list)
         {
             #ifdef SUPERVERBOSE
                 qDebug("HttpRequest: found cookie %s",part.data());
@@ -326,7 +326,7 @@ HttpRequest::RequestStatus HttpRequest::getStatus() const
 }
 
 
-const QByteArray &HttpRequest::getMethod() const
+const QByteArray& HttpRequest::getMethod() const
 {
     return method;
 }
@@ -338,54 +338,54 @@ QByteArray HttpRequest::getPath() const
 }
 
 
-const QByteArray &HttpRequest::getRawPath() const
+const QByteArray& HttpRequest::getRawPath() const
 {
     return path;
 }
 
 
-const QByteArray &HttpRequest::getVersion() const
+const QByteArray& HttpRequest::getVersion() const
 {
     return version;
 }
 
 
-const QByteArray &HttpRequest::getHeader(const QByteArray &name) const
+const QByteArray& HttpRequest::getHeader(const QByteArray& name) const
 {
     return headers.value(name.toLower(), EMPTY_ARRAY);
 }
 
-QList<QByteArray> HttpRequest::getHeaders(const QByteArray &name) const
+QList<QByteArray> HttpRequest::getHeaders(const QByteArray& name) const
 {
     return headers.values(name.toLower());
 }
 
-const QMultiMap<QByteArray,QByteArray> &HttpRequest::getHeaderMap() const
+const QMultiMap<QByteArray,QByteArray>& HttpRequest::getHeaderMap() const
 {
     return headers;
 }
 
-const QByteArray &HttpRequest::getParameter(const QByteArray& name) const
+const QByteArray& HttpRequest::getParameter(const QByteArray& name) const
 {
     return parameters.value(name, EMPTY_ARRAY);
 }
 
-QList<QByteArray> HttpRequest::getParameters(const QByteArray &name) const
+QList<QByteArray> HttpRequest::getParameters(const QByteArray& name) const
 {
     return parameters.values(name);
 }
 
-const QMultiMap<QByteArray,QByteArray> &HttpRequest::getParameterMap() const
+const QMultiMap<QByteArray,QByteArray>& HttpRequest::getParameterMap() const
 {
     return parameters;
 }
 
-const QByteArray &HttpRequest::getBody() const
+const QByteArray& HttpRequest::getBody() const
 {
     return bodyData;
 }
 
-QByteArray HttpRequest::urlDecode(const QByteArray &source)
+QByteArray HttpRequest::urlDecode(const QByteArray& source)
 {
     QByteArray buffer(source);
     buffer.replace('+',' ');
@@ -545,7 +545,7 @@ void HttpRequest::parseMultiPartFile()
     #endif
 }
 
-QTemporaryFile* HttpRequest::getUploadedFile(const QByteArray &fieldName) const
+QTemporaryFile* HttpRequest::getUploadedFile(const QByteArray& fieldName) const
 {
     auto it = uploadedFiles.find(fieldName);
     if (uploadedFiles.end() == it)
@@ -570,7 +570,7 @@ const QMap<QByteArray,QByteArray>& HttpRequest::getCookieMap() const
   Note that multiple clients may have the same IP address, if they
   share an internet connection (which is very common).
  */
-const QHostAddress &HttpRequest::getPeerAddress() const
+const QHostAddress& HttpRequest::getPeerAddress() const
 {
     return peerAddress;
 }

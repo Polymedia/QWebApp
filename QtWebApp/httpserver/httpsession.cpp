@@ -97,7 +97,7 @@ HttpSession::~HttpSession()
 }
 
 
-const QByteArray &HttpSession::getId() const
+const QByteArray& HttpSession::getId() const
 {
     if (dataPtr)
     {

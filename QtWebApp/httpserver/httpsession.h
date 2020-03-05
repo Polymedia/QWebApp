@@ -50,7 +50,7 @@ public:
     ~HttpSession();
 
     /** Get the unique ID of this session. This method is thread safe. */
-    const QByteArray &getId() const;
+    const QByteArray& getId() const;
 
     /**
       Null sessions cannot store data. All calls to set() and remove() 

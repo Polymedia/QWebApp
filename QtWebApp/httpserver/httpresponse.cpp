@@ -17,24 +17,24 @@ HttpResponse::HttpResponse(QTcpSocket *socket)
     chunkedMode=false;
 }
 
-void HttpResponse::setHeader(const QByteArray &name, const QByteArray &value)
+void HttpResponse::setHeader(const QByteArray& name, const QByteArray& value)
 {
     Q_ASSERT(sentHeaders==false);
     headers.insert(name,value);
 }
 
-void HttpResponse::setHeader(const QByteArray &name, int value)
+void HttpResponse::setHeader(const QByteArray& name, int value)
 {
     Q_ASSERT(sentHeaders==false);
     headers.insert(name,QByteArray::number(value));
 }
 
-const QMap<QByteArray,QByteArray> &HttpResponse::getHeaders() const
+const QMap<QByteArray,QByteArray>& HttpResponse::getHeaders() const
 {
     return headers;
 }
 
-void HttpResponse::setStatus(int statusCode, const QByteArray &description) 
+void HttpResponse::setStatus(int statusCode, const QByteArray& description) 
 {
     this->statusCode=statusCode;
     statusText=description;
@@ -54,14 +54,14 @@ void HttpResponse::writeHeaders()
     buffer.append(' ');
     buffer.append(statusText);
     buffer.append("\r\n");
-    foreach(const QByteArray &name, headers.keys())
+    foreach(const QByteArray& name, headers.keys())
     {
         buffer.append(name);
         buffer.append(": ");
         buffer.append(headers.value(name));
         buffer.append("\r\n");
     }
-    foreach(const HttpCookie &cookie, cookies.values())
+    foreach(const HttpCookie& cookie, cookies.values())
     {
         buffer.append("Set-Cookie: ");
         buffer.append(cookie.toByteArray());
@@ -73,10 +73,10 @@ void HttpResponse::writeHeaders()
     sentHeaders=true;
 }
 
-bool HttpResponse::writeToSocket(const QByteArray &data)
+bool HttpResponse::writeToSocket(const QByteArray& data)
 {
-    int remaining = data.size();
-    const char *ptr = data.constData();
+    int remaining=data.size();
+    const char *ptr=data.constData();
     while (socket->isOpen() && remaining>0)
     {
         // If the output buffer has become large, then wait until it has been sent.
@@ -90,13 +90,13 @@ bool HttpResponse::writeToSocket(const QByteArray &data)
         {
           return false;
         }
-        ptr += written;
-        remaining -= written;
+        ptr+=written;
+        remaining-=written;
     }
     return true;
 }
 
-void HttpResponse::write(const QByteArray &data, bool lastPart)
+void HttpResponse::write(const QByteArray& data, bool lastPart)
 {
     Q_ASSERT(sentLastPart==false);
 
@@ -113,7 +113,7 @@ void HttpResponse::write(const QByteArray &data, bool lastPart)
         // else if we will not close the connection at the end, them we must use the chunked mode.
         else
         {
-            const QByteArray &connectionValue = headers.value("Connection",headers.value("connection"));
+            const QByteArray& connectionValue = headers.value("Connection",headers.value("connection"));
             bool connectionClose=QString::compare(connectionValue, "close", Qt::CaseInsensitive)==0;
             if (!connectionClose)
             {
@@ -172,7 +172,7 @@ void HttpResponse::setCookie(const HttpCookie& cookie)
 }
 
 
-const QMap<QByteArray,HttpCookie> &HttpResponse::getCookies() const
+const QMap<QByteArray,HttpCookie>& HttpResponse::getCookies() const
 {
     return cookies;
 }

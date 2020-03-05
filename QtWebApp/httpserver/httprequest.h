@@ -64,16 +64,16 @@ public:
     RequestStatus getStatus() const;
 
     /** Get the method of the HTTP request  (e.g. "GET") */
-    const QByteArray &getMethod() const;
+    const QByteArray& getMethod() const;
 
     /** Get the decoded path of the HTPP request (e.g. "/index.html") */
     QByteArray getPath() const;
 
     /** Get the raw path of the HTTP request (e.g. "/file%20with%20spaces.html") */
-    const QByteArray &getRawPath() const;
+    const QByteArray& getRawPath() const;
 
     /** Get the version of the HTPP request (e.g. "HTTP/1.1") */
-    const QByteArray &getVersion() const;
+    const QByteArray& getVersion() const;
 
     /**
       Get the value of a HTTP request header.
@@ -81,7 +81,7 @@ public:
       @return If the header occurs multiple times, only the last
       one is returned.
     */
-    const QByteArray &getHeader(const QByteArray &name) const;
+    const QByteArray& getHeader(const QByteArray& name) const;
 
     /**
       Get the values of a HTTP request header.
@@ -93,7 +93,7 @@ public:
      * Get all HTTP request headers. Note that the header names
      * are returned in lower-case.
      */
-    const QMultiMap<QByteArray,QByteArray> &getHeaderMap() const;
+    const QMultiMap<QByteArray,QByteArray>& getHeaderMap() const;
 
     /**
       Get the value of a HTTP request parameter.
@@ -101,19 +101,19 @@ public:
       @return If the parameter occurs multiple times, only the last
       one is returned.
     */
-    const QByteArray &getParameter(const QByteArray &name) const;
+    const QByteArray& getParameter(const QByteArray& name) const;
 
     /**
       Get the values of a HTTP request parameter.
       @param name Name of the parameter, case-sensitive.
     */
-    QList<QByteArray> getParameters(const QByteArray &name) const;
+    QList<QByteArray> getParameters(const QByteArray& name) const;
 
     /** Get all HTTP request parameters. */
-    const QMultiMap<QByteArray,QByteArray> &getParameterMap() const;
+    const QMultiMap<QByteArray,QByteArray>& getParameterMap() const;
 
     /** Get the HTTP request body.  */
-    const QByteArray &getBody() const;
+    const QByteArray& getBody() const;
 
     /**
       Decode an URL parameter.
@@ -121,7 +121,7 @@ public:
       @param source The url encoded strings
       @see QUrl::toPercentEncoding for the reverse direction
     */
-    static QByteArray urlDecode(const QByteArray &source);
+    static QByteArray urlDecode(const QByteArray& source);
 
     /**
       Get an uploaded file. The file is already open. It will
@@ -131,23 +131,23 @@ public:
       For uploaded files, the method getParameters() returns
       the original fileName as provided by the calling web browser.
     */
-    QTemporaryFile* getUploadedFile(const QByteArray &fieldName) const;
+    QTemporaryFile* getUploadedFile(const QByteArray& fieldName) const;
 
     /**
       Get the value of a cookie.
       @param name Name of the cookie
     */
-    const QByteArray &getCookie(const QByteArray& name) const;
+    const QByteArray& getCookie(const QByteArray& name) const;
 
     /** Get all cookies. */
-    const QMap<QByteArray,QByteArray> &getCookieMap() const;
+    const QMap<QByteArray,QByteArray>& getCookieMap() const;
 
     /**
       Get the address of the connected client.
       Note that multiple clients may have the same IP address, if they
       share an internet connection (which is very common).
      */
-    const QHostAddress &getPeerAddress() const;
+    const QHostAddress& getPeerAddress() const;
 
 private:
 

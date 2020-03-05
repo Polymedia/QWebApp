@@ -52,8 +52,8 @@ public:
       @param line Line Number of the source file, where the message was generated (usually filles with the macro __func__ or __FUNCTION__)
       @see LogMessage for a description of the message decoration.
     */
-    virtual void log(const QtMsgType type, const QString& message, const QString &file="",
-                     const QString &function="", const int line=0);
+    virtual void log(const QtMsgType type, const QString& message, const QString& file="",
+                     const QString& function="", const int line=0);
 
     /**
       Clear the thread-local data of the current thread.

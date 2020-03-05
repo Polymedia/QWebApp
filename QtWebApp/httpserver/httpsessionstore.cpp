@@ -88,7 +88,7 @@ HttpSession HttpSessionStore::getSession(const HttpRequest& request, HttpRespons
     return HttpSession();
 }
 
-HttpSession HttpSessionStore::getSession(const QByteArray &id)
+HttpSession HttpSessionStore::getSession(const QByteArray& id)
 {
     mutex.lock();
     HttpSession session=sessions.value(id);

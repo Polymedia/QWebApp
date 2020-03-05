@@ -5,7 +5,6 @@
 
 #include "httpconnectionhandler.h"
 #include "httpresponse.h"
-#include "server/http/httperror.h"
 
 using namespace stefanfrings;
 
@@ -78,7 +77,7 @@ void HttpConnectionHandler::createSocket()
 }
 
 
-void HttpConnectionHandler::handleConnection(const tSocketDescriptor &socketDescriptor)
+void HttpConnectionHandler::handleConnection(const tSocketDescriptor& socketDescriptor)
 {
     qDebug("HttpConnectionHandler (%p): handle new connection", static_cast<void*>(this));
     busy = true;
@@ -214,9 +213,6 @@ void HttpConnectionHandler::read()
             try
             {
                 requestHandler->service(*currentRequest, response);
-            }
-            catch (const HttpError &ex) {
-                qCritical() << "HttpConnectionHandler (" << (size_t)(this) << "): " << ex.message;
             }
             catch (...)
             {
