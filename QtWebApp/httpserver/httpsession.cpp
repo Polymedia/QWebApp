@@ -9,6 +9,11 @@
 
 using namespace stefanfrings;
 
+namespace
+{
+    const QByteArray EMPTY_ARRAY{};
+}
+
 HttpSession::HttpSession(bool canStore)
 {
     if (canStore)
@@ -50,7 +55,7 @@ HttpSession& HttpSession::operator= (const HttpSession& other)
         dataPtr->lock.lockForWrite();
         dataPtr->refCount++;
 #ifdef SUPERVERBOSE
-        qDebug("HttpSession: refCount of %s is %i",dataPtr->id.constData(),dataPtr->refCount);
+        qDebug("HttpSession: (operator=) session %s refCount=%i", dataPtr->id.constData(), dataPtr->refCount);
 #endif
         dataPtr->lastAccess=QDateTime::currentMSecsSinceEpoch();
         dataPtr->lock.unlock();
@@ -61,7 +66,7 @@ HttpSession& HttpSession::operator= (const HttpSession& other)
         oldPtr->lock.lockForWrite();
         refCount=--oldPtr->refCount;
 #ifdef SUPERVERBOSE
-        qDebug("HttpSession: refCount of %s is %i",oldPtr->id.constData(),oldPtr->refCount);
+        qDebug("HttpSession: (operator=) session %s refCount=%i", oldPtr->id.constData(), oldPtr->refCount);
 #endif
         oldPtr->lock.unlock();
         if (refCount==0)
@@ -80,7 +85,7 @@ HttpSession::~HttpSession()
         dataPtr->lock.lockForWrite();
         refCount=--dataPtr->refCount;
 #ifdef SUPERVERBOSE
-        qDebug("HttpSession: refCount of %s is %i",dataPtr->id.constData(),dataPtr->refCount);
+        qDebug("HttpSession: (destructor) session %s refCount=%i", dataPtr->id.constData(), dataPtr->refCount);
 #endif
         dataPtr->lock.unlock();
         if (refCount==0)
@@ -92,16 +97,13 @@ HttpSession::~HttpSession()
 }
 
 
-QByteArray HttpSession::getId() const
+const QByteArray &HttpSession::getId() const
 {
     if (dataPtr)
     {
         return dataPtr->id;
     }
-    else
-    {
-        return QByteArray();
-    }
+    return EMPTY_ARRAY;
 }
 
 bool HttpSession::isNull() const {

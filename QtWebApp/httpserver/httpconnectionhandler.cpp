@@ -216,7 +216,7 @@ void HttpConnectionHandler::read()
                 requestHandler->service(*currentRequest, response);
             }
             catch (const HttpError &ex) {
-                auto message = ex.message;
+                qCritical() << "HttpConnectionHandler (" << (size_t)(this) << "): " << ex.message;
             }
             catch (...)
             {

@@ -25,7 +25,7 @@ HttpSessionStore::~HttpSessionStore()
     cleanupTimer.stop();
 }
 
-QByteArray HttpSessionStore::getSessionId(HttpRequest& request, HttpResponse& response)
+QByteArray HttpSessionStore::getSessionId(const HttpRequest& request, HttpResponse& response)
 {
     // The session ID in the response has priority because this one will be used in the next request.
     mutex.lock();
@@ -49,7 +49,7 @@ QByteArray HttpSessionStore::getSessionId(HttpRequest& request, HttpResponse& re
     return sessionId;
 }
 
-HttpSession HttpSessionStore::getSession(HttpRequest& request, HttpResponse& response, bool allowCreate)
+HttpSession HttpSessionStore::getSession(const HttpRequest& request, HttpResponse& response, bool allowCreate)
 {
     QByteArray sessionId=getSessionId(request,response);
     mutex.lock();
@@ -88,7 +88,7 @@ HttpSession HttpSessionStore::getSession(HttpRequest& request, HttpResponse& res
     return HttpSession();
 }
 
-HttpSession HttpSessionStore::getSession(const QByteArray id)
+HttpSession HttpSessionStore::getSession(const QByteArray &id)
 {
     mutex.lock();
     HttpSession session=sessions.value(id);

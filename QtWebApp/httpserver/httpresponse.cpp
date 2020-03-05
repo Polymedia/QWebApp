@@ -80,10 +80,9 @@ bool HttpResponse::writeToSocket(const QByteArray &data)
     while (socket->isOpen() && remaining>0)
     {
         // If the output buffer has become large, then wait until it has been sent.
-        if (socket->bytesToWrite() > /*16384*/0)
+        if (socket->bytesToWrite()>16384)
         {
             socket->waitForBytesWritten(-1);
-            continue;
         }
 
         qint64 written=socket->write(ptr,remaining);
