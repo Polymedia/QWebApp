@@ -6,17 +6,15 @@
 #ifndef HTTPREQUEST_H
 #define HTTPREQUEST_H
 
+#include <memory>
+
 #include <QByteArray>
 #include <QHostAddress>
 #include <QTcpSocket>
 #include <QMap>
-#include <QMultiMap>
 #include <QSettings>
 #include <QTemporaryFile>
-#include <QUuid>
 #include "httpglobal.h"
-
-#include <memory>
 
 namespace stefanfrings {
 
@@ -38,7 +36,6 @@ namespace stefanfrings {
 */
 
 class DECLSPEC HttpRequest {
-//    Q_DISABLE_COPY(HttpRequest)
     friend class HttpSessionStore;
 
 public:
@@ -51,11 +48,6 @@ public:
       @param settings Configuration settings
     */
     HttpRequest(const QSettings* settings);
-
-    /**
-      Destructor.
-    */
-    virtual ~HttpRequest();
 
     /**
       Read the HTTP request from a socket.
@@ -72,16 +64,16 @@ public:
     RequestStatus getStatus() const;
 
     /** Get the method of the HTTP request  (e.g. "GET") */
-    QByteArray getMethod() const;
+    const QByteArray &getMethod() const;
 
     /** Get the decoded path of the HTPP request (e.g. "/index.html") */
     QByteArray getPath() const;
 
     /** Get the raw path of the HTTP request (e.g. "/file%20with%20spaces.html") */
-    const QByteArray& getRawPath() const;
+    const QByteArray &getRawPath() const;
 
     /** Get the version of the HTPP request (e.g. "HTTP/1.1") */
-    QByteArray getVersion() const;
+    const QByteArray &getVersion() const;
 
     /**
       Get the value of a HTTP request header.
@@ -89,7 +81,7 @@ public:
       @return If the header occurs multiple times, only the last
       one is returned.
     */
-    QByteArray getHeader(const QByteArray& name) const;
+    const QByteArray &getHeader(const QByteArray &name) const;
 
     /**
       Get the values of a HTTP request header.
@@ -101,7 +93,7 @@ public:
      * Get all HTTP request headers. Note that the header names
      * are returned in lower-case.
      */
-    QMultiMap<QByteArray,QByteArray> getHeaderMap() const;
+    const QMultiMap<QByteArray,QByteArray> &getHeaderMap() const;
 
     /**
       Get the value of a HTTP request parameter.
@@ -109,19 +101,19 @@ public:
       @return If the parameter occurs multiple times, only the last
       one is returned.
     */
-    QByteArray getParameter(const QByteArray& name) const;
+    const QByteArray &getParameter(const QByteArray &name) const;
 
     /**
       Get the values of a HTTP request parameter.
       @param name Name of the parameter, case-sensitive.
     */
-    QList<QByteArray> getParameters(const QByteArray& name) const;
+    QList<QByteArray> getParameters(const QByteArray &name) const;
 
     /** Get all HTTP request parameters. */
-    QMultiMap<QByteArray,QByteArray> getParameterMap() const;
+    const QMultiMap<QByteArray,QByteArray> &getParameterMap() const;
 
     /** Get the HTTP request body.  */
-    QByteArray getBody() const;
+    const QByteArray &getBody() const;
 
     /**
       Decode an URL parameter.
@@ -129,7 +121,7 @@ public:
       @param source The url encoded strings
       @see QUrl::toPercentEncoding for the reverse direction
     */
-    static QByteArray urlDecode(const QByteArray source);
+    static QByteArray urlDecode(const QByteArray &source);
 
     /**
       Get an uploaded file. The file is already open. It will
@@ -145,17 +137,17 @@ public:
       Get the value of a cookie.
       @param name Name of the cookie
     */
-    QByteArray getCookie(const QByteArray& name) const;
+    const QByteArray &getCookie(const QByteArray& name) const;
 
     /** Get all cookies. */
-    QMap<QByteArray,QByteArray>& getCookieMap();
+    const QMap<QByteArray,QByteArray> &getCookieMap() const;
 
     /**
       Get the address of the connected client.
       Note that multiple clients may have the same IP address, if they
       share an internet connection (which is very common).
      */
-    QHostAddress getPeerAddress() const;
+    const QHostAddress &getPeerAddress() const;
 
 private:
 
