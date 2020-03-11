@@ -58,6 +58,10 @@ HttpConnectionHandler* HttpConnectionHandlerPool::getConnectionHandler()
             freeHandler->setBusy();
             pool.append(freeHandler);
         }
+        else
+        {
+          qWarning("Pool is full: pool - %d, maxConnections - %d", pool.count(), maxConnectionHandlers);
+        }
     }
     mutex.unlock();
     return freeHandler;

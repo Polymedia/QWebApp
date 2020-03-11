@@ -10,14 +10,27 @@
 
 using namespace stefanfrings;
 
+namespace
+{
+const QByteArray &getValueRef(const QMap<QByteArray, QByteArray> &container, const QByteArray &key)
+{
+    const static QByteArray EMPTY_VALUE{};
+
+    const auto it = container.find(key);
+    if (container.end() == it)
+        return EMPTY_VALUE;
+
+    return it.value();
+}
+}
+
 HttpRequest::HttpRequest(const QSettings* settings)
 {
     status=waitForRequest;
     currentSize=0;
     expectedBodySize=0;
     maxSize=settings->value("maxRequestSize","16000").toInt();
-    maxMultiPartSize=settings->value("maxMultiPartSize","1000000").toInt();
-    tempFile=nullptr;
+    maxMultiPartSize=settings->value("maxMultiPartSize","1000000").toLongLong();
 }
 
 
@@ -119,7 +132,7 @@ void HttpRequest::readHeader(QTcpSocket* socket)
         QByteArray contentLength=headers.value("content-length");
         if (!contentLength.isEmpty())
         {
-            expectedBodySize=contentLength.toInt();
+            expectedBodySize=contentLength.toLongLong();
         }
         if (expectedBodySize==0)
         {
@@ -140,7 +153,7 @@ void HttpRequest::readHeader(QTcpSocket* socket)
         }
         else {
             #ifdef SUPERVERBOSE
-                qDebug("HttpRequest: expect %i bytes body",expectedBodySize);
+                qDebug("HttpRequest: expect %lld bytes body",expectedBodySize);
             #endif
             status=waitForBody;
         }
@@ -172,9 +185,9 @@ void HttpRequest::readBody(QTcpSocket* socket)
             qDebug("HttpRequest: receiving multipart body");
         #endif
         // Create an object for the temporary file, if not already present
-        if (tempFile == nullptr)
+        if (!tempFile)
         {
-            tempFile = new QTemporaryFile;
+            tempFile.reset(new QTemporaryFile{});
         }
         if (!tempFile->isOpen())
         {
@@ -239,7 +252,7 @@ void HttpRequest::decodeRequestParams()
     }
     // Split the parameters into pairs of value and name
     QList<QByteArray> list=rawParameters.split('&');
-    foreach (QByteArray part, list)
+    foreach (const QByteArray& part, list)
     {
         int equalsChar=part.indexOf('=');
         if (equalsChar>=0)
@@ -264,7 +277,7 @@ void HttpRequest::extractCookies()
     foreach(QByteArray cookieStr, headers.values("cookie"))
     {
         QList<QByteArray> list=HttpCookie::splitCSV(cookieStr);
-        foreach(QByteArray part, list)
+        foreach(const QByteArray& part, list)
         {
             #ifdef SUPERVERBOSE
                 qDebug("HttpRequest: found cookie %s",part.data());
@@ -303,6 +316,9 @@ void HttpRequest::readFromSocket(QTcpSocket* socket)
     {
         readBody(socket);
     }
+	// Warning!!!
+	// currentSize - int; maxMultiPartSize - qint64
+	// Comparetion "currentSize>maxMultiPartSize" might work incorrectly when maxMultiPartSize >= MAX_INT
     if ((boundary.isEmpty() && currentSize>maxSize) || (!boundary.isEmpty() && currentSize>maxMultiPartSize))
     {
         qWarning("HttpRequest: received too many bytes");
@@ -324,7 +340,7 @@ HttpRequest::RequestStatus HttpRequest::getStatus() const
 }
 
 
-QByteArray HttpRequest::getMethod() const
+const QByteArray& HttpRequest::getMethod() const
 {
     return method;
 }
@@ -342,15 +358,15 @@ const QByteArray& HttpRequest::getRawPath() const
 }
 
 
-QByteArray HttpRequest::getVersion() const
+const QByteArray& HttpRequest::getVersion() const
 {
     return version;
 }
 
 
-QByteArray HttpRequest::getHeader(const QByteArray& name) const
+const QByteArray& HttpRequest::getHeader(const QByteArray& name) const
 {
-    return headers.value(name.toLower());
+    return getValueRef(headers, name.toLower());
 }
 
 QList<QByteArray> HttpRequest::getHeaders(const QByteArray& name) const
@@ -358,14 +374,14 @@ QList<QByteArray> HttpRequest::getHeaders(const QByteArray& name) const
     return headers.values(name.toLower());
 }
 
-QMultiMap<QByteArray,QByteArray> HttpRequest::getHeaderMap() const
+const QMultiMap<QByteArray,QByteArray>& HttpRequest::getHeaderMap() const
 {
     return headers;
 }
 
-QByteArray HttpRequest::getParameter(const QByteArray& name) const
+const QByteArray& HttpRequest::getParameter(const QByteArray& name) const
 {
-    return parameters.value(name);
+    return getValueRef(parameters, name);
 }
 
 QList<QByteArray> HttpRequest::getParameters(const QByteArray& name) const
@@ -373,17 +389,17 @@ QList<QByteArray> HttpRequest::getParameters(const QByteArray& name) const
     return parameters.values(name);
 }
 
-QMultiMap<QByteArray,QByteArray> HttpRequest::getParameterMap() const
+const QMultiMap<QByteArray,QByteArray>& HttpRequest::getParameterMap() const
 {
     return parameters;
 }
 
-QByteArray HttpRequest::getBody() const
+const QByteArray& HttpRequest::getBody() const
 {
     return bodyData;
 }
 
-QByteArray HttpRequest::urlDecode(const QByteArray source)
+QByteArray HttpRequest::urlDecode(const QByteArray& source)
 {
     QByteArray buffer(source);
     buffer.replace('+',' ');
@@ -422,17 +438,31 @@ void HttpRequest::parseMultiPartFile()
             {
                 if (line.contains("form-data"))
                 {
-                    int start=line.indexOf(" name=\"");
-                    int end=line.indexOf("\"",start+7);
+                    int start=line.indexOf(" name=");
+                    int end=line.indexOf(";", start+7);
+                    if (end<0)
+                        end = line.size();
                     if (start>=0 && end>=start)
                     {
-                        fieldName=line.mid(start+7,end-start-7);
+                        if (line.at(start+6)=='"' && line.at(end-1)=='"')
+                        {
+                            ++start;
+                            --end;
+                        }
+                        fieldName=line.mid(start+6,end-start-6);
                     }
-                    start=line.indexOf(" filename=\"");
-                    end=line.indexOf("\"",start+11);
+                    start=line.indexOf(" filename=");
+                    end=line.indexOf(";", start+11);
+                    if (end<0)
+                        end=line.size();
                     if (start>=0 && end>=start)
                     {
-                        fileName=line.mid(start+11,end-start-11);
+                        if (line.at(start+10)=='"' && line.at(end-1)=='"')
+                        {
+                            ++start;
+                            --end;
+                        }
+                        fileName=line.mid(start+10,end-start-10);
                     }
                     #ifdef SUPERVERBOSE
                         qDebug("HttpRequest: multipart field=%s, filename=%s",fieldName.data(),fileName.data());
@@ -452,7 +482,7 @@ void HttpRequest::parseMultiPartFile()
         #ifdef SUPERVERBOSE
             qDebug("HttpRequest: reading multpart data");
         #endif
-        QTemporaryFile* uploadedFile=nullptr;
+        std::shared_ptr<QTemporaryFile> uploadedFile;
         QByteArray fieldValue;
         while (!tempFile->atEnd() && !finished && !tempFile->error())
         {
@@ -508,7 +538,7 @@ void HttpRequest::parseMultiPartFile()
                     // this is a file
                     if (!uploadedFile)
                     {
-                        uploadedFile=new QTemporaryFile();
+                        uploadedFile.reset(new QTemporaryFile());
                         uploadedFile->open();
                     }
                     uploadedFile->write(line);
@@ -529,39 +559,22 @@ void HttpRequest::parseMultiPartFile()
     #endif
 }
 
-HttpRequest::~HttpRequest()
+QTemporaryFile* HttpRequest::getUploadedFile(const QByteArray& fieldName) const
 {
-    foreach(QByteArray key, uploadedFiles.keys())
-    {
-        QTemporaryFile* file=uploadedFiles.value(key);
-        if (file->isOpen())
-        {
-            file->close();
-        }
-        delete file;
-    }
-    if (tempFile != nullptr)
-    {
-        if (tempFile->isOpen())
-        {
-            tempFile->close();
-        }
-        delete tempFile;
-    }
+    auto it = uploadedFiles.find(fieldName);
+    if (uploadedFiles.end() == it)
+        return nullptr;
+
+    return it->get();
 }
 
-QTemporaryFile* HttpRequest::getUploadedFile(const QByteArray fieldName) const
+const QByteArray &HttpRequest::getCookie(const QByteArray& name) const
 {
-    return uploadedFiles.value(fieldName);
-}
-
-QByteArray HttpRequest::getCookie(const QByteArray& name) const
-{
-    return cookies.value(name);
+    return getValueRef(cookies, name);
 }
 
 /** Get the map of cookies */
-QMap<QByteArray,QByteArray>& HttpRequest::getCookieMap()
+const QMap<QByteArray,QByteArray>& HttpRequest::getCookieMap() const
 {
     return cookies;
 }
@@ -571,8 +584,7 @@ QMap<QByteArray,QByteArray>& HttpRequest::getCookieMap()
   Note that multiple clients may have the same IP address, if they
   share an internet connection (which is very common).
  */
-QHostAddress HttpRequest::getPeerAddress() const
+const QHostAddress& HttpRequest::getPeerAddress() const
 {
     return peerAddress;
 }
-

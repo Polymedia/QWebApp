@@ -7,6 +7,7 @@
 #include "httpconnectionhandler.h"
 #include "httpconnectionhandlerpool.h"
 #include <QCoreApplication>
+#include <QNetworkProxy>
 
 using namespace stefanfrings;
 
@@ -41,6 +42,7 @@ void HttpListener::listen()
     QString host = settings->value("host").toString();
     quint16 port=settings->value("port").toUInt() & 0xFFFF;
     QTcpServer::listen(host.isEmpty() ? QHostAddress::Any : QHostAddress(host), port);
+    setProxy(QNetworkProxy(QNetworkProxy::NoProxy));
     if (!isListening())
     {
         qCritical("HttpListener: Cannot bind on port %i: %s",port,qPrintable(errorString()));
@@ -69,6 +71,10 @@ void HttpListener::incomingConnection(tSocketDescriptor socketDescriptor) {
     if (pool)
     {
         freeHandler=pool->getConnectionHandler();
+    }
+    else
+    {
+        qCritical("Pool is not initialized.");
     }
 
     // Let the handler process the new connection.

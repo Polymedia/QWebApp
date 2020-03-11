@@ -77,7 +77,7 @@ void HttpConnectionHandler::createSocket()
 }
 
 
-void HttpConnectionHandler::handleConnection(tSocketDescriptor socketDescriptor)
+void HttpConnectionHandler::handleConnection(const tSocketDescriptor& socketDescriptor)
 {
     qDebug("HttpConnectionHandler (%p): handle new connection", static_cast<void*>(this));
     busy = true;
@@ -113,7 +113,7 @@ void HttpConnectionHandler::handleConnection(tSocketDescriptor socketDescriptor)
 }
 
 
-bool HttpConnectionHandler::isBusy()
+bool HttpConnectionHandler::isBusy() const
 {
     return busy;
 }
@@ -122,7 +122,6 @@ void HttpConnectionHandler::setBusy()
 {
     this->busy = true;
 }
-
 
 void HttpConnectionHandler::readTimeout()
 {
@@ -136,7 +135,6 @@ void HttpConnectionHandler::readTimeout()
     delete currentRequest;
     currentRequest=nullptr;
 }
-
 
 void HttpConnectionHandler::disconnected()
 {
@@ -175,7 +173,7 @@ void HttpConnectionHandler::read()
         }
 
         // If the request is aborted, return error message and close the connection
-        if (currentRequest->getStatus()==HttpRequest::abort)
+        if (currentRequest && currentRequest->getStatus()==HttpRequest::abort)
         {
             socket->write("HTTP/1.1 413 entity too large\r\nConnection: close\r\n\r\n413 Entity too large\r\n");
             while(socket->bytesToWrite()) socket->waitForBytesWritten();
@@ -186,7 +184,7 @@ void HttpConnectionHandler::read()
         }
 
         // If the request is complete, let the request mapper dispatch it
-        if (currentRequest->getStatus()==HttpRequest::complete)
+        if (currentRequest && currentRequest->getStatus()==HttpRequest::complete)
         {
             readTimer.stop();
             qDebug("HttpConnectionHandler (%p): received request",static_cast<void*>(this));
