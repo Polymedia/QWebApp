@@ -16,7 +16,7 @@ HttpRequest::HttpRequest(const QSettings* settings)
     currentSize=0;
     expectedBodySize=0;
     maxSize=settings->value("maxRequestSize","16000").toInt();
-    maxMultiPartSize=settings->value("maxMultiPartSize","1000000").toInt();
+    maxMultiPartSize=settings->value("maxMultiPartSize","1000000").toLongLong();
     tempFile=nullptr;
 }
 
@@ -119,7 +119,7 @@ void HttpRequest::readHeader(QTcpSocket* socket)
         QByteArray contentLength=headers.value("content-length");
         if (!contentLength.isEmpty())
         {
-            expectedBodySize=contentLength.toInt();
+            expectedBodySize=contentLength.toLongLong();
         }
         if (expectedBodySize==0)
         {
@@ -140,7 +140,7 @@ void HttpRequest::readHeader(QTcpSocket* socket)
         }
         else {
             #ifdef SUPERVERBOSE
-                qDebug("HttpRequest: expect %i bytes body",expectedBodySize);
+                qDebug("HttpRequest: expect %lld bytes body",expectedBodySize);
             #endif
             status=waitForBody;
         }
@@ -303,6 +303,9 @@ void HttpRequest::readFromSocket(QTcpSocket* socket)
     {
         readBody(socket);
     }
+	// Warning!!!
+	// currentSize - int; maxMultiPartSize - qint64
+	// Comparetion "currentSize>maxMultiPartSize" might work incorrectly when maxMultiPartSize >= MAX_INT
     if ((boundary.isEmpty() && currentSize>maxSize) || (!boundary.isEmpty() && currentSize>maxMultiPartSize))
     {
         qWarning("HttpRequest: received too many bytes");
@@ -422,17 +425,31 @@ void HttpRequest::parseMultiPartFile()
             {
                 if (line.contains("form-data"))
                 {
-                    int start=line.indexOf(" name=\"");
-                    int end=line.indexOf("\"",start+7);
+                    int start=line.indexOf(" name=");
+                    int end=line.indexOf(";", start+7);
+                    if (end<0)
+                        end = line.size();
                     if (start>=0 && end>=start)
                     {
-                        fieldName=line.mid(start+7,end-start-7);
+                        if (line.at(start+6)=='"' && line.at(end-1)=='"')
+                        {
+                            ++start;
+                            --end;
+                        }
+                        fieldName=line.mid(start+6,end-start-6);
                     }
-                    start=line.indexOf(" filename=\"");
-                    end=line.indexOf("\"",start+11);
+                    start=line.indexOf(" filename=");
+                    end=line.indexOf(";", start+11);
+                    if (end<0)
+                        end=line.size();
                     if (start>=0 && end>=start)
                     {
-                        fileName=line.mid(start+11,end-start-11);
+                        if (line.at(start+10)=='"' && line.at(end-1)=='"')
+                        {
+                            ++start;
+                            --end;
+                        }
+                        fileName=line.mid(start+10,end-start-10);
                     }
                     #ifdef SUPERVERBOSE
                         qDebug("HttpRequest: multipart field=%s, filename=%s",fieldName.data(),fileName.data());
