@@ -37,7 +37,7 @@ StaticFileController::StaticFileController(const QSettings *settings, QObject* p
 }
 
 
-void StaticFileController::service(HttpRequest &request, HttpResponse &response)
+void StaticFileController::service(const HttpRequest& request, HttpResponse& response)
 {
     QByteArray path=request.getPath();
     // Check if we have the file in cache
@@ -49,7 +49,7 @@ void StaticFileController::service(HttpRequest &request, HttpResponse &response)
         QByteArray document=entry->document; //copy the cached document, because other threads may destroy the cached entry immediately after mutex unlock.
         QByteArray filename=entry->filename;
         mutex.unlock();
-        qDebug("StaticFileController: Cache hit for %s",path.data());
+        qDebug("StaticFileController: Cache hit for %s",path.constData());
         setContentType(filename,response);
         response.setHeader("Cache-Control","max-age="+QByteArray::number(maxAge/1000));
         response.write(document);
@@ -58,12 +58,12 @@ void StaticFileController::service(HttpRequest &request, HttpResponse &response)
     {
         mutex.unlock();
         // The file is not in cache.
-        qDebug("StaticFileController: Cache miss for %s",path.data());
+        qDebug("StaticFileController: Cache miss for %s",path.constData());
         // Forbid access to files outside the docroot directory
         if (path.contains("/..") || path.contains("/\\..") ||
                 QFileInfo(docroot+path).filePath() != QFileInfo(docroot+path).absoluteFilePath())
         {
-            qWarning("StaticFileController: detected forbidden characters in path %s",path.data());
+            qWarning("StaticFileController: detected forbidden characters in path %s",path.constData());
             response.setStatus(403,"forbidden");
             response.write("403 forbidden",true);
             return;
@@ -122,7 +122,7 @@ void StaticFileController::service(HttpRequest &request, HttpResponse &response)
     }
 }
 
-void StaticFileController::setContentType(const QString fileName, HttpResponse &response) const
+void StaticFileController::setContentType(const QString& fileName, HttpResponse& response) const
 {
     if (fileName.endsWith(".png"))
     {
