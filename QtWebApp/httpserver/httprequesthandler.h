@@ -35,16 +35,13 @@ public:
      */
     HttpRequestHandler(QObject* parent=nullptr);
 
-    /** Destructor */
-    virtual ~HttpRequestHandler();
-
     /**
       Generate a response for an incoming HTTP request.
       @param request The received HTTP request
       @param response Must be used to return the response
       @warning This method must be thread safe
     */
-    virtual void service(HttpRequest& request, HttpResponse& response);
+    virtual void service(const HttpRequest& request, HttpResponse& response);
 
 };
 

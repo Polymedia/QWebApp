@@ -49,7 +49,7 @@ public:
       @param name name of the header
       @param value value of the header
     */
-    void setHeader(const QByteArray name, const QByteArray value);
+    void setHeader(const QByteArray& name, const QByteArray& value);
 
     /**
       Set a HTTP response header.
@@ -57,19 +57,19 @@ public:
       @param name name of the header
       @param value value of the header
     */
-    void setHeader(const QByteArray name, const int value);
+    void setHeader(const QByteArray& name, int value);
 
     /** Get the map of HTTP response headers */
-    QMap<QByteArray,QByteArray>& getHeaders();
+    const QMap<QByteArray,QByteArray>& getHeaders() const;
 
     /** Get the map of cookies */
-    QMap<QByteArray,HttpCookie>& getCookies();
+    const QMap<QByteArray,HttpCookie>& getCookies() const;
 
     /**
       Set status code and description. The default is 200,OK.
       You must call this method before the first write().
     */
-    void setStatus(const int statusCode, const QByteArray description=QByteArray());
+    void setStatus(int statusCode, const QByteArray& description);
 
     /** Return the status code. */
     int getStatusCode() const;
@@ -87,7 +87,7 @@ public:
       @param data Data bytes of the body
       @param lastPart Indicates that this is the last chunk of data and flushes the output buffer.
     */
-    void write(const QByteArray data, const bool lastPart=false);
+    void write(const QByteArray& data, bool lastPart=false);
 
     /**
       Indicates whether the body has been sent completely (write() has been called with lastPart=true).
@@ -149,7 +149,7 @@ private:
     QMap<QByteArray,HttpCookie> cookies;
 
     /** Write raw data to the socket. This method blocks until all bytes have been passed to the TCP buffer */
-    bool writeToSocket(QByteArray data);
+    bool writeToSocket(const QByteArray& data);
 
     /**
       Write the response HTTP status and headers to the socket.
