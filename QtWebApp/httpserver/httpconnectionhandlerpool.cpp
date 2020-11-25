@@ -15,7 +15,6 @@ HttpConnectionHandlerPool::HttpConnectionHandlerPool(const QSettings *settings, 
     Q_ASSERT(settings!=0);
     this->settings=settings;
     this->requestHandler=requestHandler;
-    this->sslConfiguration=NULL;
     loadSslConfig();
     cleanupTimer.start(settings->value("cleanupInterval",1000).toInt());
     connect(&cleanupTimer, SIGNAL(timeout()), SLOT(cleanup()));
@@ -24,26 +23,21 @@ HttpConnectionHandlerPool::HttpConnectionHandlerPool(const QSettings *settings, 
 
 HttpConnectionHandlerPool::~HttpConnectionHandlerPool()
 {
-    // delete all connection handlers and wait until their threads are closed
-    foreach(HttpConnectionHandler* handler, pool)
-    {
-       delete handler;
-    }
-    delete sslConfiguration;
+    pool.clear();
     qDebug("HttpConnectionHandlerPool (%p): destroyed", this);
 }
 
 
 HttpConnectionHandler* HttpConnectionHandlerPool::getConnectionHandler()
 {
-    HttpConnectionHandler* freeHandler=0;
+    HttpConnectionHandler *freeHandler=nullptr;
     mutex.lock();
     // find a free handler in pool
-    foreach(HttpConnectionHandler* handler, pool)
+    for (auto &handler : pool)
     {
         if (!handler->isBusy())
         {
-            freeHandler=handler;
+            freeHandler=handler.get();
             freeHandler->setBusy();
             break;
         }
@@ -51,16 +45,16 @@ HttpConnectionHandler* HttpConnectionHandlerPool::getConnectionHandler()
     // create a new handler, if necessary
     if (!freeHandler)
     {
-        int maxConnectionHandlers=settings->value("maxThreads",100).toInt();
-        if (pool.count()<maxConnectionHandlers)
+        const size_t maxConnectionHandlers=settings->value("maxThreads",100).toUInt();
+        if (pool.size() < maxConnectionHandlers)
         {
-            freeHandler=new HttpConnectionHandler(settings,requestHandler,sslConfiguration);
+            freeHandler=new HttpConnectionHandler(settings, requestHandler, sslConfiguration.get());
             freeHandler->setBusy();
-            pool.append(freeHandler);
+            pool.emplace_back(freeHandler);
         }
         else
         {
-          qWarning("Pool is full: pool - %d, maxConnections - %d", pool.count(), maxConnectionHandlers);
+          qWarning("Pool is full: pool - %d, maxConnections - %d", pool.size(), maxConnectionHandlers);
         }
     }
     mutex.unlock();
@@ -70,21 +64,21 @@ HttpConnectionHandler* HttpConnectionHandlerPool::getConnectionHandler()
 
 void HttpConnectionHandlerPool::cleanup()
 {
-    int maxIdleHandlers=settings->value("minThreads",1).toInt();
-    int idleCounter=0;
+    const size_t maxIdleHandlers=settings->value("minThreads",1).toUInt();
+    size_t idleCounter=0;
     mutex.lock();
-    foreach(HttpConnectionHandler* handler, pool)
+    for (auto it = pool.begin(); it != pool.end(); )
     {
-        if (!handler->isBusy())
+        if (!(*it)->isBusy())
         {
             if (++idleCounter > maxIdleHandlers)
             {
-                delete handler;
-                pool.removeOne(handler);
-                qDebug("HttpConnectionHandlerPool: Removed connection handler (%p), pool size is now %i",handler,pool.size());
+                qDebug("HttpConnectionHandlerPool: Removed connection handler (%p), pool size is now %i", it->get(), pool.size());
+                pool.erase(it++);
                 break; // remove only one handler in each interval
             }
         }
+        ++it;
     }
     mutex.unlock();
 }
@@ -140,7 +134,7 @@ void HttpConnectionHandlerPool::loadSslConfig()
             keyFile.close();
 
             // Create the SSL configuration
-            sslConfiguration=new QSslConfiguration();
+            sslConfiguration.reset(new QSslConfiguration{});
             sslConfiguration->setLocalCertificate(certificate);
             sslConfiguration->setPrivateKey(sslKey);
             sslConfiguration->setPeerVerifyMode(QSslSocket::VerifyNone);

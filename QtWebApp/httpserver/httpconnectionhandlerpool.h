@@ -1,7 +1,9 @@
 #ifndef HTTPCONNECTIONHANDLERPOOL_H
 #define HTTPCONNECTIONHANDLERPOOL_H
 
-#include <QList>
+#include <list>
+#include <memory>
+
 #include <QTimer>
 #include <QObject>
 #include <QMutex>
@@ -67,13 +69,13 @@ public:
 private:
 
     /** Settings for this pool */
-    const QSettings* settings;
+    const QSettings* settings = nullptr;
 
     /** Will be assigned to each Connectionhandler during their creation */
     HttpRequestHandler* requestHandler;
 
     /** Pool of connection handlers */
-    QList<HttpConnectionHandler*> pool;
+    std::list<std::unique_ptr<HttpConnectionHandler>> pool;
 
     /** Timer to clean-up unused connection handler */
     QTimer cleanupTimer;
@@ -82,7 +84,7 @@ private:
     QMutex mutex;
 
     /** The SSL configuration (certificate, key and other settings) */
-    QSslConfiguration* sslConfiguration;
+    std::unique_ptr<QSslConfiguration> sslConfiguration;
 
     /** Load SSL configuration */
     void loadSslConfig();
