@@ -14,6 +14,7 @@
 #include <QTimer>
 #include <QThread>
 #include "httpglobal.h"
+#include "httpheadershandler.h"
 #include "httprequest.h"
 #include "httprequesthandler.h"
 
@@ -70,6 +71,9 @@ public:
     /** Mark this handler as busy */
     void setBusy();
 
+    /**  Set handlers for headers checking **/
+    void setHeadersHandler(const HeadersHandler& headersHandler);
+
 private:
 
     /** Configuration settings */
@@ -98,6 +102,9 @@ private:
 
     /**  Create SSL or TCP socket */
     void createSocket();
+
+    /**  Handlers for headers checking **/
+    HeadersHandler headersHandler;
 
 public slots:
 

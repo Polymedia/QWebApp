@@ -15,6 +15,7 @@
 #include <QSettings>
 #include <QTemporaryFile>
 #include "httpglobal.h"
+#include "httpheadershandler.h"
 
 namespace stefanfrings {
 
@@ -41,13 +42,13 @@ class DECLSPEC HttpRequest {
 public:
 
     /** Values for getStatus() */
-    enum RequestStatus {waitForRequest, waitForHeader, waitForBody, complete, abort};
+    enum RequestStatus {waitForRequest, waitForHeader, waitForBody, complete, wrongHeaders, abort};
 
     /**
       Constructor.
       @param settings Configuration settings
     */
-    HttpRequest(const QSettings* settings);
+    HttpRequest(const QSettings* settings, const HeadersHandler& headersHandler);
 
     /**
       Read the HTTP request from a socket.
@@ -149,7 +150,12 @@ public:
      */
     const QHostAddress& getPeerAddress() const;
 
-private:
+    /**
+      Get http error.
+    */
+    const HttpError& getHttpError() const;
+
+  private:
 
     /** Request headers */
     QMultiMap<QByteArray,QByteArray> headers;
@@ -226,6 +232,14 @@ private:
     /** Buffer for collecting characters of request and header lines */
     QByteArray lineBuffer;
 
+    /** Handlers for headers checking */
+    HeadersHandler headersHandler;
+
+    /** Variable to determine if headers have been checked */
+    bool wasHeadersHandled;
+
+    /** Http error of failed headers checking */
+    HttpError httpError;
 };
 
 } // end of namespace

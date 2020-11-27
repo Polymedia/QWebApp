@@ -10,27 +10,15 @@
 
 using namespace stefanfrings;
 
-namespace
-{
-const QByteArray &getValueRef(const QMap<QByteArray, QByteArray> &container, const QByteArray &key)
-{
-    const static QByteArray EMPTY_VALUE{};
-
-    const auto it = container.find(key);
-    if (container.end() == it)
-        return EMPTY_VALUE;
-
-    return it.value();
-}
-}
-
-HttpRequest::HttpRequest(const QSettings* settings)
-{
+HttpRequest::HttpRequest(const QSettings* settings, const HeadersHandler& headersHandler) {
     status=waitForRequest;
     currentSize=0;
     expectedBodySize=0;
     maxSize=settings->value("maxRequestSize","16000").toInt();
     maxMultiPartSize=settings->value("maxMultiPartSize","1000000").toLongLong();
+
+    this->headersHandler=headersHandler;
+    wasHeadersHandled=false;
 }
 
 
@@ -314,11 +302,26 @@ void HttpRequest::readFromSocket(QTcpSocket* socket)
     }
     else if (status==waitForBody)
     {
+      if (!wasHeadersHandled) {
+        wasHeadersHandled = true;
+
+        auto &[handlers, errorHandler] = headersHandler;
+
+        for (const auto &handler : handlers) {
+          if (const auto [isOk, httpError] = handler(headers); !isOk) {
+            status = wrongHeaders;
+            errorHandler(httpError);
+            this->httpError = errorHandler;
+            return;
+          }
+        }
+      }
+
         readBody(socket);
     }
-	// Warning!!!
-	// currentSize - int; maxMultiPartSize - qint64
-	// Comparetion "currentSize>maxMultiPartSize" might work incorrectly when maxMultiPartSize >= MAX_INT
+    // Warning!!!
+    // currentSize - int; maxMultiPartSize - qint64
+    // Comparetion "currentSize>maxMultiPartSize" might work incorrectly when maxMultiPartSize >= MAX_INT
     if ((boundary.isEmpty() && currentSize>maxSize) || (!boundary.isEmpty() && currentSize>maxMultiPartSize))
     {
         qWarning("HttpRequest: received too many bytes");
@@ -366,7 +369,7 @@ const QByteArray& HttpRequest::getVersion() const
 
 const QByteArray& HttpRequest::getHeader(const QByteArray& name) const
 {
-    return getValueRef(headers, name.toLower());
+    return getHeaderValueRef(headers, name.toLower());
 }
 
 QList<QByteArray> HttpRequest::getHeaders(const QByteArray& name) const
@@ -381,7 +384,7 @@ const QMultiMap<QByteArray,QByteArray>& HttpRequest::getHeaderMap() const
 
 const QByteArray& HttpRequest::getParameter(const QByteArray& name) const
 {
-    return getValueRef(parameters, name);
+    return getHeaderValueRef(parameters, name);
 }
 
 QList<QByteArray> HttpRequest::getParameters(const QByteArray& name) const
@@ -570,7 +573,7 @@ QTemporaryFile* HttpRequest::getUploadedFile(const QByteArray& fieldName) const
 
 const QByteArray &HttpRequest::getCookie(const QByteArray& name) const
 {
-    return getValueRef(cookies, name);
+    return getHeaderValueRef(cookies, name);
 }
 
 /** Get the map of cookies */
@@ -587,4 +590,9 @@ const QMap<QByteArray,QByteArray>& HttpRequest::getCookieMap() const
 const QHostAddress& HttpRequest::getPeerAddress() const
 {
     return peerAddress;
+}
+
+const HttpError& stefanfrings::HttpRequest::getHttpError() const
+{
+    return httpError;
 }
