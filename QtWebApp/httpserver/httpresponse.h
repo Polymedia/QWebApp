@@ -122,13 +122,14 @@ public:
      */
     bool isConnected() const;
 
+protected:
+    /** Socket for writing output */
+    QTcpSocket* socket;
+
 private:
 
     /** Request headers */
     QMap<QByteArray,QByteArray> headers;
-
-    /** Socket for writing output */
-    QTcpSocket* socket;
 
     /** HTTP status code*/
     int statusCode;
