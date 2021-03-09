@@ -235,9 +235,6 @@ public:
     /** Handlers for headers checking */
     HeadersHandler headersHandler;
 
-    /** Variable to determine if headers have been checked */
-    bool wasHeadersHandled;
-
     /** Http error of failed headers checking */
     HttpError httpError;
 };

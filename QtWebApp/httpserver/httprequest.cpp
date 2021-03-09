@@ -18,7 +18,6 @@ HttpRequest::HttpRequest(const QSettings* settings, const HeadersHandler& header
     maxMultiPartSize=settings->value("maxMultiPartSize","1000000").toLongLong();
 
     this->headersHandler=headersHandler;
-    wasHeadersHandled=false;
 }
 
 
@@ -299,24 +298,22 @@ void HttpRequest::readFromSocket(QTcpSocket* socket)
     else if (status==waitForHeader)
     {
         readHeader(socket);
+
+        if (status != waitForHeader) {
+            auto &[handlers, errorHandler] = headersHandler;
+
+            for (const auto &handler : handlers) {
+                if (const auto [isOk, httpError] = handler({method, path, parameters, headers}); !isOk) {
+                    status = wrongHeaders;
+                    errorHandler(httpError);
+                    this->httpError = errorHandler;
+                    return;
+                }
+            }
+        }
     }
     else if (status==waitForBody)
     {
-      if (!wasHeadersHandled) {
-        wasHeadersHandled = true;
-
-        auto &[handlers, errorHandler] = headersHandler;
-
-        for (const auto &handler : handlers) {
-          if (const auto [isOk, httpError] = handler(headers); !isOk) {
-            status = wrongHeaders;
-            errorHandler(httpError);
-            this->httpError = errorHandler;
-            return;
-          }
-        }
-      }
-
         readBody(socket);
     }
     // Warning!!!

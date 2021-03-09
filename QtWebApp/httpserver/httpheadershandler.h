@@ -31,9 +31,18 @@ struct HttpError {
 };
 
 typedef QMultiMap<QByteArray, QByteArray> Headers;
-typedef std::tuple<bool, HttpError> HeadersCheckingStatus;
-typedef std::tuple<std::vector<std::function<HeadersCheckingStatus(const Headers &)>>, HttpError> HeadersHandler;
+typedef QMultiMap<QByteArray, QByteArray> Parameters;
 
+
+struct HttpRequestInfo {
+    QString method;
+    QString path;
+    Parameters parameters;
+    Headers headers;
+};
+
+typedef std::tuple<bool, HttpError> HeadersCheckingStatus;
+typedef std::tuple<std::vector<std::function<HeadersCheckingStatus(const HttpRequestInfo &)>>, HttpError> HeadersHandler;
 
 const QByteArray &getHeaderValueRef(const Headers &container, const QByteArray &key);
 } // namespace stefanfrings
