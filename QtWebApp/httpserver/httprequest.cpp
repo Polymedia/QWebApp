@@ -20,6 +20,27 @@ HttpRequest::HttpRequest(const QSettings* settings, const HeadersHandler& header
     this->headersHandler=headersHandler;
 }
 
+HttpRequest::HttpRequest(const HttpRequest& other)
+{
+    headers = other.headers;
+    parameters = other.parameters;
+    uploadedFiles = other.uploadedFiles;
+    cookies = other.cookies;
+    bodyData = other.bodyData;
+    method = other.method;
+    path = other.path;
+    version = other.version;
+    status = other.status;
+    peerAddress = other.peerAddress;
+    maxSize = other.maxSize;
+    maxMultiPartSize = other.maxMultiPartSize;
+    currentSize = other.currentSize;
+    expectedBodySize = other.expectedBodySize;
+    currentHeader = other.currentHeader;
+    lineBuffer = other.lineBuffer;
+    headersHandler = other.headersHandler;
+    httpError = other.httpError;
+}
 
 void HttpRequest::readRequest(QTcpSocket* socket)
 {
@@ -592,4 +613,9 @@ const QHostAddress& HttpRequest::getPeerAddress() const
 const HttpError& stefanfrings::HttpRequest::getHttpError() const
 {
     return httpError;
+}
+
+void stefanfrings::HttpRequest::setHeadersHandler(const HeadersHandler& headersHandler)
+{
+    this->headersHandler = headersHandler;
 }

@@ -65,6 +65,7 @@ void HttpListener::close() {
 void stefanfrings::HttpListener::setHeadersHandler(const HeadersHandler& headersHandler)
 {
   this->headersHandler = headersHandler;
+  emit newHeadersHandler(headersHandler);
 }
 
 void HttpListener::incomingConnection(tSocketDescriptor socketDescriptor) {
@@ -81,6 +82,8 @@ void HttpListener::incomingConnection(tSocketDescriptor socketDescriptor) {
     {
         qCritical("Pool is not initialized.");
     }
+
+    connect(this, &HttpListener::newHeadersHandler, freeHandler, &HttpConnectionHandler::setHeadersHandler);
 
     // Let the handler process the new connection.
     if (freeHandler)

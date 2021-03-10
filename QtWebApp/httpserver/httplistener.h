@@ -107,6 +107,8 @@ signals:
       @param socketDescriptor references the accepted connection.
     */
     void handleConnection(tSocketDescriptor socketDescriptor);
+
+    void newHeadersHandler(const HeadersHandler& headersHandler);
 };
 
 } // end of namespace

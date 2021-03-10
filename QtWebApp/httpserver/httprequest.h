@@ -36,9 +36,10 @@ namespace stefanfrings {
   The body is always a little larger than the file itself.
 */
 
-class DECLSPEC HttpRequest {
+class DECLSPEC HttpRequest : public QObject {
     friend class HttpSessionStore;
 
+    Q_OBJECT
 public:
 
     /** Values for getStatus() */
@@ -49,6 +50,7 @@ public:
       @param settings Configuration settings
     */
     HttpRequest(const QSettings* settings, const HeadersHandler& headersHandler);
+    HttpRequest(const HttpRequest&);
 
     /**
       Read the HTTP request from a socket.
@@ -155,7 +157,10 @@ public:
     */
     const HttpError& getHttpError() const;
 
-  private:
+public slots:
+    void setHeadersHandler(const HeadersHandler& headersHandler);
+
+private:
 
     /** Request headers */
     QMultiMap<QByteArray,QByteArray> headers;

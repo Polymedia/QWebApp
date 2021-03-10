@@ -126,6 +126,8 @@ void HttpConnectionHandler::setBusy()
 void stefanfrings::HttpConnectionHandler::setHeadersHandler(const HeadersHandler& headersHandler)
 {
     this->headersHandler = headersHandler;
+
+    emit newHeadersHandler(headersHandler);
 }
 
 void HttpConnectionHandler::readTimeout()
@@ -162,6 +164,8 @@ void HttpConnectionHandler::read()
         if (!currentRequest)
         {
             currentRequest=new HttpRequest(settings, headersHandler);
+
+            connect(this, &HttpConnectionHandler::newHeadersHandler, currentRequest, &HttpRequest::setHeadersHandler);
         }
 
         // Collect data for the request object

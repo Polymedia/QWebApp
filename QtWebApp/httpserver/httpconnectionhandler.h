@@ -71,6 +71,7 @@ public:
     /** Mark this handler as busy */
     void setBusy();
 
+public slots:
     /**  Set handlers for headers checking **/
     void setHeadersHandler(const HeadersHandler& headersHandler);
 
@@ -105,6 +106,9 @@ private:
 
     /**  Handlers for headers checking **/
     HeadersHandler headersHandler;
+
+signals:
+    void newHeadersHandler(const HeadersHandler& headersHandler);
 
 public slots:
 
