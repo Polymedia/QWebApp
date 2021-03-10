@@ -193,7 +193,8 @@ void HttpConnectionHandler::read()
                                        .arg(text);
 
           socket->write(response.toUtf8().constData());
-          while (socket->bytesToWrite()) socket->waitForBytesWritten();
+          while (socket->bytesToWrite())
+              socket->waitForBytesWritten();
           socket->disconnectFromHost();
           delete currentRequest;
           currentRequest = nullptr;
