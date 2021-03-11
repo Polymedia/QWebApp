@@ -41,7 +41,11 @@ struct HttpRequestInfo {
     Headers headers;
 };
 
-typedef std::tuple<bool, HttpError> HeadersCheckingStatus;
+struct PreviousCheckingInfo {
+    bool isFinalChecking = false;
+};
+
+typedef std::tuple<bool, PreviousCheckingInfo, HttpError> HeadersCheckingStatus;
 typedef std::tuple<std::vector<std::function<HeadersCheckingStatus(const HttpRequestInfo &)>>, HttpError> HeadersHandler;
 
 const QByteArray &getHeaderValueRef(const Headers &container, const QByteArray &key);
