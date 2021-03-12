@@ -10,29 +10,37 @@
 
 using namespace stefanfrings;
 
-namespace
-{
-const QByteArray &getValueRef(const QMap<QByteArray, QByteArray> &container, const QByteArray &key)
-{
-    const static QByteArray EMPTY_VALUE{};
-
-    const auto it = container.find(key);
-    if (container.end() == it)
-        return EMPTY_VALUE;
-
-    return it.value();
-}
-}
-
-HttpRequest::HttpRequest(const QSettings* settings)
-{
+HttpRequest::HttpRequest(const QSettings* settings, const HeadersHandler& headersHandler) {
     status=waitForRequest;
     currentSize=0;
     expectedBodySize=0;
     maxSize=settings->value("maxRequestSize","16000").toInt();
     maxMultiPartSize=settings->value("maxMultiPartSize","1000000").toLongLong();
+
+    this->headersHandler=headersHandler;
 }
 
+HttpRequest::HttpRequest(const HttpRequest& other)
+{
+    headers = other.headers;
+    parameters = other.parameters;
+    uploadedFiles = other.uploadedFiles;
+    cookies = other.cookies;
+    bodyData = other.bodyData;
+    method = other.method;
+    path = other.path;
+    version = other.version;
+    status = other.status;
+    peerAddress = other.peerAddress;
+    maxSize = other.maxSize;
+    maxMultiPartSize = other.maxMultiPartSize;
+    currentSize = other.currentSize;
+    expectedBodySize = other.expectedBodySize;
+    currentHeader = other.currentHeader;
+    lineBuffer = other.lineBuffer;
+    headersHandler = other.headersHandler;
+    httpError = other.httpError;
+}
 
 void HttpRequest::readRequest(QTcpSocket* socket)
 {
@@ -311,14 +319,32 @@ void HttpRequest::readFromSocket(QTcpSocket* socket)
     else if (status==waitForHeader)
     {
         readHeader(socket);
+
+        if (status != waitForHeader) {
+            auto &[handlers, errorHandler] = headersHandler;
+
+            for (const auto &handler : handlers) {
+                const auto [isOk, previousCheckingInfo, httpError] = handler({method, path, parameters, headers});
+
+                if (!isOk) {
+                    status = wrongHeaders;
+                    errorHandler(httpError);
+                    this->httpError = errorHandler;
+                    return;
+                }
+
+                if (previousCheckingInfo.isFinalChecking)
+                    break;
+            }
+        }
     }
     else if (status==waitForBody)
     {
         readBody(socket);
     }
-	// Warning!!!
-	// currentSize - int; maxMultiPartSize - qint64
-	// Comparetion "currentSize>maxMultiPartSize" might work incorrectly when maxMultiPartSize >= MAX_INT
+    // Warning!!!
+    // currentSize - int; maxMultiPartSize - qint64
+    // Comparetion "currentSize>maxMultiPartSize" might work incorrectly when maxMultiPartSize >= MAX_INT
     if ((boundary.isEmpty() && currentSize>maxSize) || (!boundary.isEmpty() && currentSize>maxMultiPartSize))
     {
         qWarning("HttpRequest: received too many bytes");
@@ -366,7 +392,7 @@ const QByteArray& HttpRequest::getVersion() const
 
 const QByteArray& HttpRequest::getHeader(const QByteArray& name) const
 {
-    return getValueRef(headers, name.toLower());
+    return getHeaderValueRef(headers, name.toLower());
 }
 
 QList<QByteArray> HttpRequest::getHeaders(const QByteArray& name) const
@@ -381,7 +407,7 @@ const QMultiMap<QByteArray,QByteArray>& HttpRequest::getHeaderMap() const
 
 const QByteArray& HttpRequest::getParameter(const QByteArray& name) const
 {
-    return getValueRef(parameters, name);
+    return getHeaderValueRef(parameters, name);
 }
 
 QList<QByteArray> HttpRequest::getParameters(const QByteArray& name) const
@@ -570,7 +596,7 @@ QTemporaryFile* HttpRequest::getUploadedFile(const QByteArray& fieldName) const
 
 const QByteArray &HttpRequest::getCookie(const QByteArray& name) const
 {
-    return getValueRef(cookies, name);
+    return getHeaderValueRef(cookies, name);
 }
 
 /** Get the map of cookies */
@@ -587,4 +613,14 @@ const QMap<QByteArray,QByteArray>& HttpRequest::getCookieMap() const
 const QHostAddress& HttpRequest::getPeerAddress() const
 {
     return peerAddress;
+}
+
+const HttpError& stefanfrings::HttpRequest::getHttpError() const
+{
+    return httpError;
+}
+
+void stefanfrings::HttpRequest::setHeadersHandler(const HeadersHandler& headersHandler)
+{
+    this->headersHandler = headersHandler;
 }

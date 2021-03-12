@@ -12,6 +12,7 @@
 #include "httpglobal.h"
 #include "httpconnectionhandler.h"
 #include "httpconnectionhandlerpool.h"
+#include "httpheadershandler.h"
 #include "httprequesthandler.h"
 
 namespace stefanfrings {
@@ -75,6 +76,12 @@ public:
     */
     void close();
 
+    /**
+     * @brief Set handlers for headers checking of incomming connections.
+     * @param headersHandler Rules for checking headers.
+     */
+    void setHeadersHandler(const HeadersHandler &headersHandler);
+
 protected:
 
     /** Serves new incoming connection requests */
@@ -91,15 +98,17 @@ private:
     /** Pool of connection handlers */
     HttpConnectionHandlerPool* pool;
 
-signals:
+    /** Handlers for headers checking of incomming connections */
+    HeadersHandler headersHandler;
 
+signals:
     /**
       Sent to the connection handler to process a new incoming connection.
       @param socketDescriptor references the accepted connection.
     */
-
     void handleConnection(tSocketDescriptor socketDescriptor);
 
+    void newHeadersHandler(const HeadersHandler& headersHandler);
 };
 
 } // end of namespace

@@ -62,6 +62,12 @@ void HttpListener::close() {
     }
 }
 
+void stefanfrings::HttpListener::setHeadersHandler(const HeadersHandler& headersHandler)
+{
+  this->headersHandler = headersHandler;
+  emit newHeadersHandler(headersHandler);
+}
+
 void HttpListener::incomingConnection(tSocketDescriptor socketDescriptor) {
 #ifdef SUPERVERBOSE
     qDebug("HttpListener: New connection");
@@ -77,9 +83,13 @@ void HttpListener::incomingConnection(tSocketDescriptor socketDescriptor) {
         qCritical("Pool is not initialized.");
     }
 
+    connect(this, &HttpListener::newHeadersHandler, freeHandler, &HttpConnectionHandler::setHeadersHandler);
+
     // Let the handler process the new connection.
     if (freeHandler)
     {
+        freeHandler->setHeadersHandler(headersHandler);
+
         // The descriptor is passed via event queue because the handler lives in another thread
         QMetaObject::invokeMethod(freeHandler, "handleConnection", Qt::QueuedConnection, Q_ARG(tSocketDescriptor, socketDescriptor));
     }

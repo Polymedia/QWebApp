@@ -15,6 +15,7 @@
 #include <QSettings>
 #include <QTemporaryFile>
 #include "httpglobal.h"
+#include "httpheadershandler.h"
 
 namespace stefanfrings {
 
@@ -35,19 +36,21 @@ namespace stefanfrings {
   The body is always a little larger than the file itself.
 */
 
-class DECLSPEC HttpRequest {
+class DECLSPEC HttpRequest : public QObject {
     friend class HttpSessionStore;
 
+    Q_OBJECT
 public:
 
     /** Values for getStatus() */
-    enum RequestStatus {waitForRequest, waitForHeader, waitForBody, complete, abort};
+    enum RequestStatus {waitForRequest, waitForHeader, waitForBody, complete, wrongHeaders, abort};
 
     /**
       Constructor.
       @param settings Configuration settings
     */
-    HttpRequest(const QSettings* settings);
+    HttpRequest(const QSettings* settings, const HeadersHandler& headersHandler);
+    HttpRequest(const HttpRequest&);
 
     /**
       Read the HTTP request from a socket.
@@ -149,6 +152,14 @@ public:
      */
     const QHostAddress& getPeerAddress() const;
 
+    /**
+      Get http error.
+    */
+    const HttpError& getHttpError() const;
+
+public slots:
+    void setHeadersHandler(const HeadersHandler& headersHandler);
+
 private:
 
     /** Request headers */
@@ -226,6 +237,11 @@ private:
     /** Buffer for collecting characters of request and header lines */
     QByteArray lineBuffer;
 
+    /** Handlers for headers checking */
+    HeadersHandler headersHandler;
+
+    /** Http error of failed headers checking */
+    HttpError httpError;
 };
 
 } // end of namespace

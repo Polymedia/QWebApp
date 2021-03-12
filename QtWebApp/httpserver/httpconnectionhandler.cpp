@@ -28,7 +28,7 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequ
     readTimer.setSingleShot(true);
 
     // Create TCP or SSL socket
-    createSocket();    
+    createSocket();
     socket->moveToThread(thread);
 
     // Connect signals
@@ -37,7 +37,7 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequ
     connect(&readTimer, SIGNAL(timeout()), SLOT(readTimeout()));
     connect(thread, SIGNAL(finished()), this, SLOT(thread_done()));
 
-    qDebug("HttpConnectionHandler (%p): constructed", static_cast<void*>(this));    
+    qDebug("HttpConnectionHandler (%p): constructed", static_cast<void*>(this));
 }
 
 
@@ -123,6 +123,13 @@ void HttpConnectionHandler::setBusy()
     this->busy = true;
 }
 
+void stefanfrings::HttpConnectionHandler::setHeadersHandler(const HeadersHandler& headersHandler)
+{
+    this->headersHandler = headersHandler;
+
+    emit newHeadersHandler(headersHandler);
+}
+
 void HttpConnectionHandler::readTimeout()
 {
     qDebug("HttpConnectionHandler (%p): read timeout occured",static_cast<void*>(this));
@@ -156,11 +163,16 @@ void HttpConnectionHandler::read()
         // Create new HttpRequest object if necessary
         if (!currentRequest)
         {
-            currentRequest=new HttpRequest(settings);
+            currentRequest=new HttpRequest(settings, headersHandler);
+
+            connect(this, &HttpConnectionHandler::newHeadersHandler, currentRequest, &HttpRequest::setHeadersHandler);
         }
 
         // Collect data for the request object
-        while (socket->bytesAvailable() && currentRequest->getStatus()!=HttpRequest::complete && currentRequest->getStatus()!=HttpRequest::abort)
+        while (socket->bytesAvailable() &&
+               currentRequest->getStatus() != HttpRequest::complete &&
+               currentRequest->getStatus() != HttpRequest::abort &&
+               currentRequest->getStatus() != HttpRequest::wrongHeaders)
         {
             currentRequest->readFromSocket(socket);
             if (currentRequest->getStatus()==HttpRequest::waitForBody)
@@ -170,6 +182,23 @@ void HttpConnectionHandler::read()
                 int readTimeout=settings->value("readTimeout",10000).toInt();
                 readTimer.start(readTimeout);
             }
+        }
+
+        // If some headers fails checking, return status code and error text from handler
+        if (currentRequest && currentRequest->getStatus() == HttpRequest::wrongHeaders) {
+          const auto [statusCode, text] = currentRequest->getHttpError();
+          const QString response = QString{"HTTP/1.1 %1\r\nConnection: "
+                                           "close\r\n\r\n%2\r\n"}
+                                       .arg(statusCode)
+                                       .arg(text);
+
+          socket->write(response.toUtf8().constData());
+          while (socket->bytesToWrite())
+              socket->waitForBytesWritten();
+          socket->disconnectFromHost();
+          delete currentRequest;
+          currentRequest = nullptr;
+          return;
         }
 
         // If the request is aborted, return error message and close the connection
