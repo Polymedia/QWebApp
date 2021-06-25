@@ -226,6 +226,7 @@ void HttpRequest::readBody(QTcpSocket* socket)
             }
             parseMultiPartFile();
             tempFile->close();
+            tempFile.reset();
             status=complete;
         }
     }
