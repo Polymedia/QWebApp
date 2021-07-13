@@ -12,6 +12,8 @@
 #include "httpglobal.h"
 #include "httpcookie.h"
 
+#include <rapidjson/document.h>
+
 namespace stefanfrings {
 
 /**
@@ -88,6 +90,8 @@ public:
       @param lastPart Indicates that this is the last chunk of data and flushes the output buffer.
     */
     void write(const QByteArray& data, bool lastPart=false);
+
+    void writeJSON(const rapidjson::Document& document);
 
     /**
       Indicates whether the body has been sent completely (write() has been called with lastPart=true).
