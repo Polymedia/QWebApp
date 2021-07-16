@@ -12,7 +12,11 @@
 #include "httpglobal.h"
 #include "httpcookie.h"
 
-#include <rapidjson/document.h>
+class ISocketWriter {
+public:
+    virtual ~ISocketWriter() = default;
+    virtual void writeToSocket(QTcpSocket& socket) = 0;
+};
 
 namespace stefanfrings {
 
@@ -91,7 +95,7 @@ public:
     */
     void write(const QByteArray& data, bool lastPart=false);
 
-    void writeJSON(const rapidjson::Document& document);
+    void sendWithWriter(ISocketWriter& writer);
 
     /**
       Indicates whether the body has been sent completely (write() has been called with lastPart=true).

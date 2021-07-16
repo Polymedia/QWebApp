@@ -5,59 +5,6 @@
 
 #include "httpresponse.h"
 
-#include <rapidjson/writer.h>
-
-namespace {
-
-    class StreamJSON
-    {
-    public:
-        using Ch = char; // For rapidjson::Writer purpose.
-
-        StreamJSON(QTcpSocket& socket)
-            : m_socket(socket)
-        {}
-
-        void Put(char c) {
-            if (m_idxBuffer == sizeof(m_buffer))
-                sendBuffer();
-            m_buffer[m_idxBuffer++] = c;
-        };
-
-        void Flush() {
-            sendBuffer();
-            m_socket.flush();
-        };
-
-    private:
-        void sendBuffer()
-        {
-            const char* pData = m_buffer;
-            qint64 bytesToSend = m_idxBuffer;
-            m_idxBuffer = 0;
-
-            while (m_noErrors && bytesToSend > 0 && m_socket.isOpen()) {
-                if (m_socket.bytesToWrite() > sizeof(m_buffer))
-                    m_socket.waitForBytesWritten(-1);
-
-                const qint64 written = m_socket.write(pData, bytesToSend);
-                m_noErrors = (written >= 0);
-                if (m_noErrors) {
-                    bytesToSend -= written;
-                    pData += written;
-                }
-            }
-        }
-
-        QTcpSocket& m_socket;
-        bool m_noErrors = true;
-        char m_buffer[16384];
-        size_t m_idxBuffer = 0;
-    };
-
-} // namespace
-
-
 using namespace stefanfrings;
 
 HttpResponse::HttpResponse(QTcpSocket *socket)
@@ -210,14 +157,10 @@ void HttpResponse::write(const QByteArray& data, bool lastPart)
     }
 }
 
-void HttpResponse::writeJSON(const rapidjson::Document& document)
+void HttpResponse::sendWithWriter(ISocketWriter& writer)
 {
     writeHeaders();
-
-    StreamJSON stream(*socket);
-    rapidjson::Writer writer(stream);
-
-    document.Accept(writer);
+    writer.writeToSocket(*socket);
 }
 
 bool HttpResponse::hasSentLastPart() const
