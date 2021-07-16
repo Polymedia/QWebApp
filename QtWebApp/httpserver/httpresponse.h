@@ -12,6 +12,12 @@
 #include "httpglobal.h"
 #include "httpcookie.h"
 
+class ISocketWriter {
+public:
+    virtual ~ISocketWriter() = default;
+    virtual void writeToSocket(QTcpSocket& socket) = 0;
+};
+
 namespace stefanfrings {
 
 /**
@@ -88,6 +94,8 @@ public:
       @param lastPart Indicates that this is the last chunk of data and flushes the output buffer.
     */
     void write(const QByteArray& data, bool lastPart=false);
+
+    void sendWithWriter(ISocketWriter& writer);
 
     /**
       Indicates whether the body has been sent completely (write() has been called with lastPart=true).

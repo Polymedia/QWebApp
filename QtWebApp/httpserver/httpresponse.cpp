@@ -157,6 +157,12 @@ void HttpResponse::write(const QByteArray& data, bool lastPart)
     }
 }
 
+void HttpResponse::sendWithWriter(ISocketWriter& writer)
+{
+    writeHeaders();
+    writer.writeToSocket(*socket);
+}
+
 bool HttpResponse::hasSentLastPart() const
 {
     return sentLastPart;
