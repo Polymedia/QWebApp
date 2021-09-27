@@ -129,6 +129,9 @@ private slots:
     /** Received from the socket when a connection has been closed */
     void disconnected();
 
+    void errorOccurred(QAbstractSocket::SocketError socketError);
+    void stateChanged(QAbstractSocket::SocketState socketState);
+
     /** Cleanup after the thread is closed */
     void thread_done();
 };

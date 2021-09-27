@@ -6,6 +6,16 @@
 #include "httpconnectionhandler.h"
 #include "httpresponse.h"
 
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+// #include <winsock2.h>
+// #include <Ws2tcpip.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+
 using namespace stefanfrings;
 
 HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequestHandler *requestHandler, const QSslConfiguration* sslConfiguration)
@@ -34,12 +44,25 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequ
     // Connect signals
     connect(socket, SIGNAL(readyRead()), SLOT(read()));
     connect(socket, SIGNAL(disconnected()), SLOT(disconnected()));
+
+    connect(socket, SIGNAL(errorOccurred), SLOT(errorOccurred(QAbstractSocket::SocketError)));
+    connect(socket, SIGNAL(stateChanged), SLOT(stateChanged(QAbstractSocket::SocketState)));
+   
     connect(&readTimer, SIGNAL(timeout()), SLOT(readTimeout()));
     connect(thread, SIGNAL(finished()), this, SLOT(thread_done()));
 
     qDebug("HttpConnectionHandler (%p): constructed", static_cast<void*>(this));
 }
 
+void HttpConnectionHandler::stateChanged(QAbstractSocket::SocketState socketState)
+{
+    qDebug("HttpConnectionHandler (%p): stateChanged", static_cast<void*>(this));
+}
+
+void HttpConnectionHandler::errorOccurred(QAbstractSocket::SocketError socketError)
+{
+    qDebug("HttpConnectionHandler (%p): errorOccurred", static_cast<void*>(this));
+}
 
 void HttpConnectionHandler::thread_done()
 {
@@ -74,6 +97,28 @@ void HttpConnectionHandler::createSocket()
     #endif
     // else create an instance of QTcpSocket
     socket=new QTcpSocket();
+
+
+    int enableKeepAlive = 1;
+    SOCKET fd = (SOCKET)socket->socketDescriptor();
+    auto res = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (char*)&enableKeepAlive, sizeof(enableKeepAlive));
+    if (res == SOCKET_ERROR)
+        qInfo("HttpConnectionHandler (%p): SO_KEEPALIVE err", static_cast<void*>(this));
+
+    int maxIdle = 10; /* seconds */
+    res = setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, (char*)&maxIdle, sizeof(maxIdle));
+    if (res == SOCKET_ERROR)
+        qInfo("HttpConnectionHandler (%p): TCP_KEEPIDLE err", static_cast<void*>(this));
+
+    int count = 3;  // send up to 3 keepalive packets out, then disconnect if no response
+    res = setsockopt(fd, SOL_TCP, TCP_KEEPCNT, (char*)&count, sizeof(count));
+    if (res == SOCKET_ERROR)
+        qInfo("HttpConnectionHandler (%p): TCP_KEEPCNT err", static_cast<void*>(this));
+
+    int interval = 2;   // send a keepalive packet out every 2 seconds (after the 5 second idle period)
+    res = setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, (char*)&interval, sizeof(interval));
+    if (res == SOCKET_ERROR)
+        qInfo("HttpConnectionHandler (%p): TCP_KEEPINTVL err", static_cast<void*>(this));
 }
 
 
