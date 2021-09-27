@@ -97,8 +97,6 @@ void HttpConnectionHandler::createSocket()
     // else create an instance of QTcpSocket
     socket=new QTcpSocket();
 
-    socket->setSocketOption()
-
     int enableKeepAlive = 1;
     auto fd = socket->socketDescriptor();
     auto res = setsockopt(*fd, SOL_SOCKET, SO_KEEPALIVE, (char*)&enableKeepAlive, sizeof(enableKeepAlive));
