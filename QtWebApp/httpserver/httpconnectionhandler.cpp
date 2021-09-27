@@ -99,23 +99,23 @@ void HttpConnectionHandler::createSocket()
 
     int enableKeepAlive = 1;
     auto fd = socket->socketDescriptor();
-    auto res = setsockopt(*fd, SOL_SOCKET, SO_KEEPALIVE, (char*)&enableKeepAlive, sizeof(enableKeepAlive));
-    if (res == SOCKET_ERROR)
+    auto res = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (char*)&enableKeepAlive, sizeof(enableKeepAlive));
+    if (res != 0)
         qInfo("HttpConnectionHandler (%p): SO_KEEPALIVE err", static_cast<void*>(this));
 
     int maxIdle = 10; /* seconds */
-    res = setsockopt(*fd, IPPROTO_TCP, TCP_KEEPIDLE, (char*)&maxIdle, sizeof(maxIdle));
-    if (res == SOCKET_ERROR)
+    res = setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, (char*)&maxIdle, sizeof(maxIdle));
+    if (res != 0)
         qInfo("HttpConnectionHandler (%p): TCP_KEEPIDLE err", static_cast<void*>(this));
 
     int count = 3;  // send up to 3 keepalive packets out, then disconnect if no response
-    res = setsockopt(*fd, SOL_TCP, TCP_KEEPCNT, (char*)&count, sizeof(count));
-    if (res == SOCKET_ERROR)
+    res = setsockopt(fd, SOL_TCP, TCP_KEEPCNT, (char*)&count, sizeof(count));
+    if (res != 0)
         qInfo("HttpConnectionHandler (%p): TCP_KEEPCNT err", static_cast<void*>(this));
 
     int interval = 2;   // send a keepalive packet out every 2 seconds (after the 5 second idle period)
-    res = setsockopt(*fd, SOL_TCP, TCP_KEEPINTVL, (char*)&interval, sizeof(interval));
-    if (res == SOCKET_ERROR)
+    res = setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, (char*)&interval, sizeof(interval));
+    if (res != 0)
         qInfo("HttpConnectionHandler (%p): TCP_KEEPINTVL err", static_cast<void*>(this));
 }
 
