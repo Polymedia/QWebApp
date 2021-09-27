@@ -14,6 +14,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/tcp.h>
 
 using namespace stefanfrings;
 
