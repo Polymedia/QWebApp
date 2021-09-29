@@ -13,6 +13,8 @@
 #include <QSettings>
 #include <QTimer>
 #include <QThread>
+#include <thread>
+
 #include "httpglobal.h"
 #include "httpheadershandler.h"
 #include "httprequest.h"
@@ -76,6 +78,7 @@ public slots:
     void setHeadersHandler(const HeadersHandler& headersHandler);
 
 private:
+    void waitForReadThread();
 
     /** Configuration settings */
     const QSettings* settings;
@@ -106,6 +109,8 @@ private:
 
     /**  Handlers for headers checking **/
     HeadersHandler headersHandler;
+
+    std::thread m_threadReadSocket;
 
 signals:
     void newHeadersHandler(const HeadersHandler& headersHandler);
