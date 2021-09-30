@@ -24,6 +24,13 @@ namespace stefanfrings {
    @see StaticFileController which delivers static local files.
 */
 
+class ICanceller {
+public:
+    virtual void cancel() = 0;
+};
+using CancellerRef = std::shared_ptr<ICanceller>;
+using CancellerInitialization = std::function<void(CancellerRef)>;
+
 class DECLSPEC HttpRequestHandler : public QObject {
     Q_OBJECT
     Q_DISABLE_COPY(HttpRequestHandler)
@@ -41,7 +48,7 @@ public:
       @param response Must be used to return the response
       @warning This method must be thread safe
     */
-    virtual void service(const HttpRequest& request, HttpResponse& response);
+    virtual void service(const HttpRequest& request, HttpResponse& response, CancellerInitialization onInitCanceller);
 
 };
 

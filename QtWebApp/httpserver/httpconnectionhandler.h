@@ -19,6 +19,7 @@
 #include "httpheadershandler.h"
 #include "httprequest.h"
 #include "httprequesthandler.h"
+#include <mutex>
 
 namespace stefanfrings {
 
@@ -79,6 +80,8 @@ public slots:
 
 private:
     void waitForReadThread();
+    void disconnectFromHost();
+    void freeUnsafe();
 
     /** Configuration settings */
     const QSettings* settings;
@@ -91,9 +94,6 @@ private:
 
     /** Time for read timeout detection */
     QTimer readTimer;
-
-    /** Storage for the current incoming HTTP request */
-    HttpRequest* currentRequest;
 
     /** Dispatches received requests to services */
     HttpRequestHandler* requestHandler;
@@ -110,6 +110,9 @@ private:
     /**  Handlers for headers checking **/
     HeadersHandler headersHandler;
 
+    std::mutex  m_disconnectionMutex;
+    bool m_needToFree = false;
+    CancellerRef m_canceller;
     std::thread m_threadReadSocket;
 
 signals:

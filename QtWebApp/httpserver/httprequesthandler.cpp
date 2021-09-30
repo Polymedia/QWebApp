@@ -11,7 +11,7 @@ HttpRequestHandler::HttpRequestHandler(QObject* parent)
     : QObject(parent)
 {}
 
-void HttpRequestHandler::service(const HttpRequest& request, HttpResponse& response)
+void HttpRequestHandler::service(const HttpRequest& request, HttpResponse& response, CancellerInitialization /*onInitCanceller*/)
 {
     qCritical("HttpRequestHandler: you need to override the service() function");
     qDebug("HttpRequestHandler: request=%s %s %s",request.getMethod().data(),request.getPath().data(),request.getVersion().data());
