@@ -6,6 +6,7 @@
 #endif
 #include <QDir>
 #include "httpconnectionhandlerpool.h"
+#include <mutex>
 
 using namespace stefanfrings;
 
@@ -36,43 +37,40 @@ HttpConnectionHandlerPool::~HttpConnectionHandlerPool()
 
 HttpConnectionHandler* HttpConnectionHandlerPool::getConnectionHandler()
 {
-    HttpConnectionHandler* freeHandler=0;
-    mutex.lock();
+    HttpConnectionHandler* freeHandler = nullptr;
+    std::lock_guard lock{ mutex };
+
     // find a free handler in pool
     foreach(HttpConnectionHandler* handler, pool)
     {
-        if (!handler->isBusy())
-        {
+        if (!handler->isBusy()) {
             freeHandler=handler;
             freeHandler->setBusy();
             break;
         }
     }
+
     // create a new handler, if necessary
-    if (!freeHandler)
-    {
-        int maxConnectionHandlers=settings->value("maxThreads",100).toInt();
-        if (pool.count()<maxConnectionHandlers)
-        {
-            freeHandler=new HttpConnectionHandler(settings,requestHandler,sslConfiguration);
+    if (!freeHandler) {
+        int maxConnectionHandlers = settings->value("maxThreads",100).toInt();
+        if (pool.count() < maxConnectionHandlers) {
+            freeHandler = new HttpConnectionHandler(settings,requestHandler,sslConfiguration);
             freeHandler->setBusy();
             pool.append(freeHandler);
         }
         else
-        {
           qWarning("Pool is full: pool - %d, maxConnections - %d", pool.count(), maxConnectionHandlers);
-        }
     }
-    mutex.unlock();
+
     return freeHandler;
 }
-
 
 void HttpConnectionHandlerPool::cleanup()
 {
     int maxIdleHandlers=settings->value("minThreads",1).toInt();
     int idleCounter=0;
-    mutex.lock();
+
+    std::lock_guard lock{ mutex };
     foreach(HttpConnectionHandler* handler, pool)
     {
         if (!handler->isBusy())
@@ -86,7 +84,6 @@ void HttpConnectionHandlerPool::cleanup()
             }
         }
     }
-    mutex.unlock();
 }
 
 
