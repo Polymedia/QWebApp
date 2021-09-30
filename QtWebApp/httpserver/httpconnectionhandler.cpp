@@ -146,7 +146,8 @@ void HttpConnectionHandler::disconnected()
         freeUnsafe();
     else {
         m_needToFree = true;
-        m_canceller->cancel();
+        if (m_canceller)
+            m_canceller->cancel();
     }
 }
 
@@ -174,10 +175,20 @@ void HttpConnectionHandler::read()
 {
     waitForReadThread();
 
+
     m_needToFree = false;
     m_threadReadSocket = std::thread ([this] {
+
+        connect(this, SIGNAL(disconnectFromHostSignal()), SLOT(disconnectFromHost()));
+
         HttpRequest currentRequest(settings, headersHandler);
         connect(this, &HttpConnectionHandler::newHeadersHandler, &currentRequest, &HttpRequest::setHeadersHandler);
+
+
+        auto disconnectFromHostLocal = [this]
+        {
+            emit  disconnectFromHostSignal();
+        };
 
         // The loop adds support for HTTP pipelinig
         while (socket->bytesAvailable())
@@ -211,7 +222,7 @@ void HttpConnectionHandler::read()
                     .arg(text);
 
                 socket->write(response.toUtf8().constData());
-                disconnectFromHost();
+                disconnectFromHostLocal();
                 return;
             }
 
@@ -219,7 +230,7 @@ void HttpConnectionHandler::read()
             if (currentRequest.getStatus() == HttpRequest::abort)
             {
                 socket->write("HTTP/1.1 413 entity too large\r\nConnection: close\r\n\r\n413 Entity too large\r\n");
-                disconnectFromHost();
+                disconnectFromHostLocal();
                 return;
             }
 
@@ -277,7 +288,7 @@ void HttpConnectionHandler::read()
 
                 // Close the connection or prepare for the next request on the same connection.
                 if (closeConnection)
-                    disconnectFromHost();
+                    disconnectFromHostLocal();
                 else
                 {
                     // Start timer for next request

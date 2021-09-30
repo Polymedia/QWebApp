@@ -74,13 +74,16 @@ public:
     /** Mark this handler as busy */
     void setBusy();
 
+signals:
+    void disconnectFromHostSignal();
+
 public slots:
     /**  Set handlers for headers checking **/
     void setHeadersHandler(const HeadersHandler& headersHandler);
+    void disconnectFromHost();
 
 private:
     void waitForReadThread();
-    void disconnectFromHost();
     void freeUnsafe();
 
     /** Configuration settings */
