@@ -74,13 +74,9 @@ public:
     /** Mark this handler as busy */
     void setBusy();
 
-signals:
-    void disconnectFromHostSignal();
-
 public slots:
     /**  Set handlers for headers checking **/
     void setHeadersHandler(const HeadersHandler& headersHandler);
-    void disconnectFromHost();
 
 private:
     void waitForReadThread();
@@ -113,6 +109,7 @@ private:
     /**  Handlers for headers checking **/
     HeadersHandler headersHandler;
 
+    std::mutex  m_cancelerMutex;
     std::mutex  m_disconnectionMutex;
     bool m_needToFree = false;
     CancellerRef m_canceller;
@@ -120,6 +117,8 @@ private:
 
 signals:
     void newHeadersHandler(const HeadersHandler& headersHandler);
+    void disconnectFromHostSignal();
+    void sendLastPartSignal(std::shared_ptr<HttpResponse> response, bool closeConnection);
 
 public slots:
 
@@ -128,6 +127,8 @@ public slots:
       @param socketDescriptor references the accepted connection.
     */
     void handleConnection(const tSocketDescriptor& socketDescriptor);
+    void disconnectFromHost();
+    void sendLastPart(std::shared_ptr<HttpResponse> response, bool closeConnection);
 
 private slots:
 
