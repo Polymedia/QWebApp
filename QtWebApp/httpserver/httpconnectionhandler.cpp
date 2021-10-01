@@ -36,9 +36,21 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequ
     connect(&readTimer, SIGNAL(timeout()), SLOT(readTimeout()));
     connect(thread, SIGNAL(finished()), this, SLOT(thread_done()));
 
+//     connect(this, &HttpConnectionHandler::disconnectFromHostSignal, &HttpConnectionHandler::disconnectFromHost );
+//     connect(this, &HttpConnectionHandler::sendLastPartSignal, &HttpConnectionHandler::sendLastPart );
+//     connect(this, &HttpConnectionHandler::finalizeReadSignal, &HttpConnectionHandler::finalizeRead);
+
+
+    auto b = connect(this, &HttpConnectionHandler::disconnectFromHostSignal, this, &HttpConnectionHandler::disconnectFromHost, Qt::QueuedConnection);
+    qDebug() << b;
+     b = connect(this, &HttpConnectionHandler::sendLastPartSignal, this, &HttpConnectionHandler::sendLastPart, Qt::QueuedConnection);
+     qDebug() << b;
+     b = connect(this, &HttpConnectionHandler::finalizeReadSignal, this, &HttpConnectionHandler::finalizeRead, Qt::QueuedConnection);
+     qDebug() << b;
+
 //     connect(this, SIGNAL(disconnectFromHostSignal()), SLOT(disconnectFromHost()), Qt::QueuedConnection);
-//     connect(this, SIGNAL(sendLastPartSignal()), SLOT(sendLastPart()), Qt::QueuedConnection);
-//     connect(this, SIGNAL(finalizeReadSignal()), SLOT(finalizeRead()), Qt::QueuedConnection);
+//     connect(this, SIGNAL(sendLastPartSignal(LastPartSignalParam)), SLOT(sendLastPart(LastPartSignalParam)), Qt::QueuedConnection);
+//    connect(this, SIGNAL(finalizeReadSignal()), SLOT(finalizeRead()), Qt::QueuedConnection);
 
 
     qDebug("HttpConnectionHandler (%p): constructed", static_cast<void*>(this));
@@ -169,8 +181,9 @@ void stefanfrings::HttpConnectionHandler::disconnectFromHost()
     socket->disconnectFromHost();
 }
 
-void HttpConnectionHandler::sendLastPart(std::shared_ptr<HttpResponse> ptrResponse, bool closeConnection)
+void HttpConnectionHandler::sendLastPart(LastPartSignalParam param)
 {
+    auto [ptrResponse, closeConnection] = param;
     auto& response = *ptrResponse;
 
     // Finalize sending the response if not already done
@@ -222,9 +235,9 @@ void HttpConnectionHandler::read()
         HttpRequest currentRequest(settings, headersHandler);
         connect(this, &HttpConnectionHandler::newHeadersHandler, &currentRequest, &HttpRequest::setHeadersHandler);
 
-        connect(this, &HttpConnectionHandler::disconnectFromHostSignal, &HttpConnectionHandler::disconnectFromHost);
-        connect(this, &HttpConnectionHandler::sendLastPartSignal, &HttpConnectionHandler::sendLastPart);
-        connect(this, &HttpConnectionHandler::finalizeReadSignal, &HttpConnectionHandler::finalizeRead);
+//         connect(this, &HttpConnectionHandler::disconnectFromHostSignal, &HttpConnectionHandler::disconnectFromHost);
+//         connect(this, &HttpConnectionHandler::sendLastPartSignal, &HttpConnectionHandler::sendLastPart);
+//         connect(this, &HttpConnectionHandler::finalizeReadSignal, &HttpConnectionHandler::finalizeRead);
 
 
         auto disconnectFromHostLocal = [this]
@@ -308,10 +321,15 @@ void HttpConnectionHandler::read()
                         static_cast<void*>(this));
                 }
 
-                emit sendLastPartSignal(ptrResponse, closeConnection);
+                emit sendLastPartSignal(LastPartSignalParam{ ptrResponse, closeConnection });
             }
         }
+
         emit finalizeReadSignal();
+
+//         std::lock_guard lock{ m_disconnectionMutex };
+//         m_canceller.reset();
+//         freeUnsafe();
     });
 }
 

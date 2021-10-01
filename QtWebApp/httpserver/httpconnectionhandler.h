@@ -114,11 +114,16 @@ private:
     CancellerRef m_canceller;
     std::thread m_threadReadSocket;
 
+    struct LastPartSignalParam {
+        std::shared_ptr<HttpResponse> response;
+        bool closeConnection;
+    };
+    
 signals:
     void newHeadersHandler(const HeadersHandler& headersHandler);
     void disconnectFromHostSignal();
+    void sendLastPartSignal(LastPartSignalParam param);
     void finalizeReadSignal();
-    void sendLastPartSignal(std::shared_ptr<HttpResponse> response, bool closeConnection);
 
 public slots:
 
@@ -128,8 +133,8 @@ public slots:
     */
     void handleConnection(const tSocketDescriptor& socketDescriptor);
     void disconnectFromHost();
+    void sendLastPart(LastPartSignalParam param);
     void finalizeRead();
-    void sendLastPart(std::shared_ptr<HttpResponse> response, bool closeConnection);
 
 private slots:
 
