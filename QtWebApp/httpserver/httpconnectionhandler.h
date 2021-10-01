@@ -14,12 +14,12 @@
 #include <QTimer>
 #include <QThread>
 #include <thread>
+#include <mutex>
 
 #include "httpglobal.h"
 #include "httpheadershandler.h"
 #include "httprequest.h"
 #include "httprequesthandler.h"
-#include <mutex>
 
 namespace stefanfrings {
 
@@ -110,14 +110,14 @@ private:
     HeadersHandler headersHandler;
 
     std::mutex  m_cancelerMutex;
-    std::mutex  m_disconnectionMutex;
-    bool m_needToFree = false;
+    std::recursive_mutex  m_disconnectionMutex;
     CancellerRef m_canceller;
     std::thread m_threadReadSocket;
 
 signals:
     void newHeadersHandler(const HeadersHandler& headersHandler);
     void disconnectFromHostSignal();
+    void finalizeReadSignal();
     void sendLastPartSignal(std::shared_ptr<HttpResponse> response, bool closeConnection);
 
 public slots:
@@ -128,6 +128,7 @@ public slots:
     */
     void handleConnection(const tSocketDescriptor& socketDescriptor);
     void disconnectFromHost();
+    void finalizeRead();
     void sendLastPart(std::shared_ptr<HttpResponse> response, bool closeConnection);
 
 private slots:

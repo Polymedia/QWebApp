@@ -32,9 +32,14 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequ
 
     // Connect signals
     connect(socket, SIGNAL(readyRead()), SLOT(read()));
-    connect(socket, SIGNAL(disconnected()), SLOT(disconnected()));
+    connect(socket, SIGNAL(disconnected()), SLOT(disconnected())/*, Qt::QueuedConnection*/);
     connect(&readTimer, SIGNAL(timeout()), SLOT(readTimeout()));
     connect(thread, SIGNAL(finished()), this, SLOT(thread_done()));
+
+//     connect(this, SIGNAL(disconnectFromHostSignal()), SLOT(disconnectFromHost()), Qt::QueuedConnection);
+//     connect(this, SIGNAL(sendLastPartSignal()), SLOT(sendLastPart()), Qt::QueuedConnection);
+//     connect(this, SIGNAL(finalizeReadSignal()), SLOT(finalizeRead()), Qt::QueuedConnection);
+
 
     qDebug("HttpConnectionHandler (%p): constructed", static_cast<void*>(this));
 }
@@ -145,8 +150,6 @@ void HttpConnectionHandler::disconnected()
     if (!m_threadReadSocket.joinable())
         freeUnsafe();
     else {
-        m_needToFree = true;
-
         std::lock_guard lock{ m_cancelerMutex };
         if (m_canceller)
             m_canceller->cancel();
@@ -215,12 +218,14 @@ void HttpConnectionHandler::read()
     std::lock_guard lock{ m_disconnectionMutex };
     waitForReadThread();
 
-    m_needToFree = false;
     m_threadReadSocket = std::thread ([this] {
         HttpRequest currentRequest(settings, headersHandler);
         connect(this, &HttpConnectionHandler::newHeadersHandler, &currentRequest, &HttpRequest::setHeadersHandler);
+
         connect(this, &HttpConnectionHandler::disconnectFromHostSignal, &HttpConnectionHandler::disconnectFromHost);
         connect(this, &HttpConnectionHandler::sendLastPartSignal, &HttpConnectionHandler::sendLastPart);
+        connect(this, &HttpConnectionHandler::finalizeReadSignal, &HttpConnectionHandler::finalizeRead);
+
 
         auto disconnectFromHostLocal = [this]
         {
@@ -306,10 +311,13 @@ void HttpConnectionHandler::read()
                 emit sendLastPartSignal(ptrResponse, closeConnection);
             }
         }
-
-        std::lock_guard lock{ m_disconnectionMutex };
-        m_canceller.reset();
-        if (m_needToFree)
-            freeUnsafe();
+        emit finalizeReadSignal();
     });
+}
+
+void HttpConnectionHandler::finalizeRead()
+{
+    std::lock_guard lock{ m_disconnectionMutex };
+    m_canceller.reset();
+    freeUnsafe();
 }
