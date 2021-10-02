@@ -96,6 +96,9 @@ private:
     /** Time for read timeout detection */
     QTimer readTimer;
 
+    /** Storage for the current incoming HTTP request */
+    HttpRequest* currentRequest;
+
     /** Dispatches received requests to services */
     HttpRequestHandler* requestHandler;
 

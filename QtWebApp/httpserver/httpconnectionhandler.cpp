@@ -17,6 +17,7 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequ
     this->requestHandler=requestHandler;
     this->sslConfiguration=sslConfiguration;
     busy=false;
+    currentRequest = nullptr;
 
     // execute signals in a new thread
     thread = new QThread();
@@ -110,6 +111,9 @@ void HttpConnectionHandler::handleConnection(const tSocketDescriptor& socketDesc
     // Start timer for read timeout
     int readTimeout=settings->value("readTimeout",10000).toInt();
     readTimer.start(readTimeout);
+    // delete previous request
+    delete currentRequest;
+    currentRequest = nullptr;
 }
 
 
@@ -158,44 +162,11 @@ void HttpConnectionHandler::disconnected()
     }
 }
 
-void stefanfrings::HttpConnectionHandler::waitForReadThread()
-{
-    if (m_threadReadSocket.joinable())
-        m_threadReadSocket.join();
-}
-
-void stefanfrings::HttpConnectionHandler::disconnectFromHost()
-{
-    while (socket->bytesToWrite())
-        socket->waitForBytesWritten();
-    socket->disconnectFromHost();
-}
-
-void HttpConnectionHandler::waitForExecution(QueuedFunction function)
-{   
-    std::promise<void> promise;
-    auto future = promise.get_future();
-
-    m_queuedFunction = [function, &promise] {
-        function();
-        promise.set_value();
-    };
-
-    emit queueFunctionSignal();
-
-    future.get();
-}
-
-void HttpConnectionHandler::queueFunctionSlot()
-{
-    m_queuedFunction();
-}
-
 void HttpConnectionHandler::read()
 {
     if (!m_readThreadDone)
     {
-       // emit readAgainSignal();
+        emit readAgainSignal();
         return;
     }
     waitForReadThread(); // Thread may be done, but not ready to be reassigned
@@ -209,24 +180,27 @@ void HttpConnectionHandler::read()
             m_canceller.reset();
         };
 
-        HttpRequest currentRequest(settings, headersHandler);
-        connect(this, &HttpConnectionHandler::newHeadersHandler, &currentRequest, &HttpRequest::setHeadersHandler);
-
         // The loop adds support for HTTP pipelinig
         while (!m_readThreadTermitated && socket->bytesAvailable())
         {
 #ifdef SUPERVERBOSE
             qDebug("HttpConnectionHandler (%p): read input", static_cast<void*>(this));
 #endif
+            // Create new HttpRequest object if necessary
+            if (!currentRequest)
+            {
+                currentRequest = new HttpRequest(settings, headersHandler);
+                connect(this, &HttpConnectionHandler::newHeadersHandler, currentRequest, &HttpRequest::setHeadersHandler);
+            }
 
             // Collect data for the request object
             while (!m_readThreadTermitated && socket->bytesAvailable() &&
-                currentRequest.getStatus() != HttpRequest::complete &&
-                currentRequest.getStatus() != HttpRequest::abort &&
-                currentRequest.getStatus() != HttpRequest::wrongHeaders)
+                currentRequest->getStatus() != HttpRequest::complete &&
+                currentRequest->getStatus() != HttpRequest::abort &&
+                currentRequest->getStatus() != HttpRequest::wrongHeaders)
             {
-                currentRequest.readFromSocket(socket);
-                if (currentRequest.getStatus() == HttpRequest::waitForBody)
+                currentRequest->readFromSocket(socket);
+                if (currentRequest->getStatus() == HttpRequest::waitForBody)
                 {
                     // Restart timer for read timeout, otherwise it would
                     // expire during large file uploads.
@@ -236,8 +210,8 @@ void HttpConnectionHandler::read()
             }
 
             // If some headers fails checking, return status code and error text from handler
-            if (currentRequest.getStatus() == HttpRequest::wrongHeaders) {
-                const auto [statusCode, text] = currentRequest.getHttpError();
+            if (currentRequest && currentRequest->getStatus() == HttpRequest::wrongHeaders) {
+                const auto [statusCode, text] = currentRequest->getHttpError();
                 const QString response = QString{ "HTTP/1.1 %1\r\nConnection: "
                                                  "close\r\n\r\n%2\r\n" }
                     .arg(statusCode)
@@ -250,7 +224,7 @@ void HttpConnectionHandler::read()
             }
 
             // If the request is aborted, return error message and close the connection
-            if (currentRequest.getStatus() == HttpRequest::abort)
+            if (currentRequest && currentRequest->getStatus() == HttpRequest::abort)
             {
                 socket->write("HTTP/1.1 413 entity too large\r\nConnection: close\r\n\r\n413 Entity too large\r\n");
                 waitForExecution([this] { disconnectFromHost(); });
@@ -259,7 +233,7 @@ void HttpConnectionHandler::read()
             }
 
             // If the request is complete, let the request mapper dispatch it
-            if (currentRequest.getStatus() == HttpRequest::complete)
+            if (currentRequest && currentRequest->getStatus() == HttpRequest::complete)
             {
                 waitForExecution([&] { readTimer.stop(); });
 
@@ -267,7 +241,7 @@ void HttpConnectionHandler::read()
 
                 // Copy the Connection:close header to the response
                 HttpResponse response(socket);
-                bool closeConnection = QString::compare(currentRequest.getHeader("Connection"), "close", Qt::CaseInsensitive) == 0;
+                bool closeConnection = QString::compare(currentRequest->getHeader("Connection"), "close", Qt::CaseInsensitive) == 0;
                 if (closeConnection)
                 {
                     response.setHeader("Connection", "close");
@@ -277,7 +251,7 @@ void HttpConnectionHandler::read()
                 // This ensures that the HttpResponse does not activate chunked mode, which is not spported by HTTP 1.0.
                 else
                 {
-                    bool http1_0 = QString::compare(currentRequest.getVersion(), "HTTP/1.0", Qt::CaseInsensitive) == 0;
+                    bool http1_0 = QString::compare(currentRequest->getVersion(), "HTTP/1.0", Qt::CaseInsensitive) == 0;
                     if (http1_0)
                     {
                         closeConnection = true;
@@ -288,7 +262,7 @@ void HttpConnectionHandler::read()
 
                 try
                 {
-                    requestHandler->service(currentRequest, response, [this](CancellerRef ref) { 
+                    requestHandler->service(*currentRequest, response, [this](CancellerRef ref) { 
                         std::lock_guard lock{ m_cancellerMutex };
                         m_canceller = ref;
                     });
@@ -346,4 +320,39 @@ void HttpConnectionHandler::read()
 
         finaliseReadThread();
     });
+}
+
+void stefanfrings::HttpConnectionHandler::waitForReadThread()
+{
+    if (m_threadReadSocket.joinable())
+        m_threadReadSocket.join();
+}
+
+void stefanfrings::HttpConnectionHandler::disconnectFromHost()
+{
+    while (socket->bytesToWrite())
+        socket->waitForBytesWritten();
+    socket->disconnectFromHost();
+    delete currentRequest;
+    currentRequest = nullptr;
+}
+
+void HttpConnectionHandler::waitForExecution(QueuedFunction function)
+{
+    std::promise<void> promise;
+    auto future = promise.get_future();
+
+    m_queuedFunction = [function, &promise] {
+        function();
+        promise.set_value();
+    };
+
+    emit queueFunctionSignal();
+
+    future.get();
+}
+
+void HttpConnectionHandler::queueFunctionSlot()
+{
+    m_queuedFunction();
 }
