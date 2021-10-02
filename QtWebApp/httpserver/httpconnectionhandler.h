@@ -20,6 +20,8 @@
 #include "httprequest.h"
 #include "httprequesthandler.h"
 #include <mutex>
+#include <functional>
+#include <future>
 
 namespace stefanfrings {
 
@@ -81,7 +83,6 @@ public slots:
 private:
     void waitForReadThread();
     void disconnectFromHost();
-    void freeUnsafe();
 
     /** Configuration settings */
     const QSettings* settings;
@@ -110,15 +111,24 @@ private:
     /**  Handlers for headers checking **/
     HeadersHandler headersHandler;
 
-    std::mutex  m_disconnectionMutex;
-    bool m_needToFree = false;
+    std::atomic_bool m_readThreadTermitated = true;
+    std::atomic_bool m_readThreadDone = true;
+    std::mutex  m_cancellerMutex;
     CancellerRef m_canceller;
     std::thread m_threadReadSocket;
 
+    using QueuedFunction = std::function<void()>;
+    QueuedFunction m_queuedFunction;
+    void waitForExecution(QueuedFunction function);
+
 signals:
     void newHeadersHandler(const HeadersHandler& headersHandler);
+    void queueFunctionSignal();
+    void readAgainSignal();
+    void disconnectAgainSignal();
 
 public slots:
+    void queueFunctionSlot();
 
     /**
       Received from from the listener, when the handler shall start processing a new connection.
