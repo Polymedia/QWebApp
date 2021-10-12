@@ -59,6 +59,7 @@ HttpConnectionHandler::~HttpConnectionHandler()
     thread->quit();
     thread->wait();
     thread->deleteLater();
+    deleteCurrentRequest();
     qDebug("HttpConnectionHandler (%p): destroyed", static_cast<void*>(this));
 }
 
@@ -112,8 +113,7 @@ void HttpConnectionHandler::handleConnection(const tSocketDescriptor& socketDesc
     int readTimeout=settings->value("readTimeout",10000).toInt();
     readTimer.start(readTimeout);
     // delete previous request
-    delete currentRequest;
-    currentRequest = nullptr;
+    deleteCurrentRequest();
 }
 
 
@@ -210,7 +210,7 @@ void HttpConnectionHandler::read()
             }
 
             // If some headers fails checking, return status code and error text from handler
-            if (currentRequest && currentRequest->getStatus() == HttpRequest::wrongHeaders) {
+            if (currentRequest->getStatus() == HttpRequest::wrongHeaders) {
                 const auto [statusCode, text] = currentRequest->getHttpError();
                 const QString response = QString{ "HTTP/1.1 %1\r\nConnection: "
                                                  "close\r\n\r\n%2\r\n" }
@@ -224,7 +224,7 @@ void HttpConnectionHandler::read()
             }
 
             // If the request is aborted, return error message and close the connection
-            if (currentRequest && currentRequest->getStatus() == HttpRequest::abort)
+            if (currentRequest->getStatus() == HttpRequest::abort)
             {
                 socket->write("HTTP/1.1 413 entity too large\r\nConnection: close\r\n\r\n413 Entity too large\r\n");
                 waitForExecution([this] { disconnectFromHost(); });
@@ -233,7 +233,7 @@ void HttpConnectionHandler::read()
             }
 
             // If the request is complete, let the request mapper dispatch it
-            if (currentRequest && currentRequest->getStatus() == HttpRequest::complete)
+            if (currentRequest->getStatus() == HttpRequest::complete)
             {
                 waitForExecution([&] { readTimer.stop(); });
 
@@ -306,8 +306,11 @@ void HttpConnectionHandler::read()
                     }
 
                     // Close the connection or prepare for the next request on the same connection.
-                    if (closeConnection)
-                        disconnectFromHost();
+                    if (closeConnection) {
+                        while (socket->bytesToWrite())
+                            socket->waitForBytesWritten();
+                        socket->disconnectFromHost();
+                    }
                     else
                     {
                         // Start timer for next request
@@ -333,6 +336,11 @@ void stefanfrings::HttpConnectionHandler::disconnectFromHost()
     while (socket->bytesToWrite())
         socket->waitForBytesWritten();
     socket->disconnectFromHost();
+    deleteCurrentRequest();
+}
+
+void stefanfrings::HttpConnectionHandler::deleteCurrentRequest()
+{
     delete currentRequest;
     currentRequest = nullptr;
 }

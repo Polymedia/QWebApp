@@ -139,6 +139,8 @@ public slots:
     */
     void handleConnection(const tSocketDescriptor& socketDescriptor);
 
+    void deleteCurrentRequest();
+
 private slots:
 
     /** Received from the socket when a read-timeout occured */
