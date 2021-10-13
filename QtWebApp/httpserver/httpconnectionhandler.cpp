@@ -36,7 +36,7 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequ
     connect(&readTimer, SIGNAL(timeout()), SLOT(readTimeout()));
     connect(thread, SIGNAL(finished()), this, SLOT(thread_done()));
 
-    connect(this, &HttpConnectionHandler::resposeSignal, this, &HttpConnectionHandler::resposeSlot, Qt::QueuedConnection);
+    connect(this, &HttpConnectionHandler::responseSignal, this, &HttpConnectionHandler::responseSlot, Qt::QueuedConnection);
 
     qDebug("HttpConnectionHandler (%p): constructed", static_cast<void*>(this));
 }
@@ -135,22 +135,31 @@ void stefanfrings::HttpConnectionHandler::resetCurrentRequest()
     currentRequest.reset();
 }
 
-void HttpConnectionHandler::resposeSlot()
+void HttpConnectionHandler::responseSlot()
 {
     using namespace std::chrono_literals;
 
     bool ready = true;
-    for (auto it = mapResponses.begin(); it != mapResponses.end(); ++it) {
-        if (std::future_status::ready == it->second.result.wait_for(100ms))
+    while (ready && !mapResponses.empty())
+    {
+        RespondInfo& info = mapResponses.begin()->second;
+        if (std::future_status::ready == info.finalizeFunctor.wait_for(50ms))
         {
-            ready = true;
+            auto finalization = info.finalizeFunctor.get();
+            auto ptrResponse = info.ptrResponse;
+            auto closeConnection = info.closeConnection;
+            mapResponses.erase(mapResponses.begin());
+
+            if (finalization)
+                finalization();
+            finalizeResponse(ptrResponse, closeConnection);
         }
         else
             ready = false;
     }
 
     if(!ready)
-        emit resposeSignal();
+        emit responseSignal();
 }
 
 void HttpConnectionHandler::readTimeout()
@@ -168,6 +177,8 @@ void HttpConnectionHandler::readTimeout()
 void HttpConnectionHandler::disconnected()
 {
     qDebug("HttpConnectionHandler (%p): disconnected", static_cast<void*>(this));
+    mapResponses.clear();
+
     socket->close();
     readTimer.stop();
     busy = false;
@@ -262,63 +273,66 @@ void HttpConnectionHandler::read()
             try
             {
                 static RespondID responseID = 0;
-                auto futureResult = requestHandler->service(*currentRequest, response);
-                mapResponses.emplace(responseID++, RespondInfo {response, std::move(futureResult)} );
-                emit resposeSignal();
+                auto futureFinalization = requestHandler->service(*currentRequest, response);
+                mapResponses.emplace(responseID++, RespondInfo {response, std::move(futureFinalization), closeConnection } );
+                emit responseSignal();
             }
             catch (...)
             {
                 qCritical("HttpConnectionHandler (%p): An uncatched exception occured in the request handler",
                           static_cast<void*>(this));
             }
-
-//             // Finalize sending the response if not already done
-//             if (!response->hasSentLastPart())
-//             {
-//                 response->write(QByteArray(),true);
-//             }
-// 
-//             qDebug("HttpConnectionHandler (%p): finished request",static_cast<void*>(this));
-// 
-//             // Find out whether the connection must be closed
-//             if (!closeConnection)
-//             {
-//                 // Maybe the request handler or mapper added a Connection:close header in the meantime
-//                 bool closeResponse=QString::compare(response->getHeaders().value("Connection"),"close",Qt::CaseInsensitive)==0;
-//                 if (closeResponse==true)
-//                 {
-//                     closeConnection=true;
-//                 }
-//                 else
-//                 {
-//                     // If we have no Content-Length header and did not use chunked mode, then we have to close the
-//                     // connection to tell the HTTP client that the end of the response has been reached.
-//                     bool hasContentLength=response->getHeaders().contains("Content-Length");
-//                     if (!hasContentLength)
-//                     {
-//                         bool hasChunkedMode=QString::compare(response->getHeaders().value("Transfer-Encoding"),"chunked",Qt::CaseInsensitive)==0;
-//                         if (!hasChunkedMode)
-//                         {
-//                             closeConnection=true;
-//                         }
-//                     }
-//                 }
-//             }
-// 
-//             // Close the connection or prepare for the next request on the same connection.
-//             if (closeConnection)
-//             {
-//                 while(socket->bytesToWrite()) socket->waitForBytesWritten();
-//                 socket->disconnectFromHost();
-//             }
-//             else
-//             {
-//                 // Start timer for next request
-//                 int readTimeout=settings->value("readTimeout",10000).toInt();
-//                 readTimer.start(readTimeout);
-//             }
-//             delete currentRequest;
-//             currentRequest=nullptr;
         }
     }
+}
+
+void HttpConnectionHandler::finalizeResponse(std::shared_ptr<HttpResponse> response, bool closeConnection)
+{
+    // Finalize sending the response if not already done
+    if (!response->hasSentLastPart())
+    {
+        response->write(QByteArray(),true);
+    }
+
+    qDebug("HttpConnectionHandler (%p): finished request",static_cast<void*>(this));
+
+    // Find out whether the connection must be closed
+    if (!closeConnection)
+    {
+        // Maybe the request handler or mapper added a Connection:close header in the meantime
+        bool closeResponse=QString::compare(response->getHeaders().value("Connection"),"close",Qt::CaseInsensitive)==0;
+        if (closeResponse==true)
+        {
+            closeConnection=true;
+        }
+        else
+        {
+            // If we have no Content-Length header and did not use chunked mode, then we have to close the
+            // connection to tell the HTTP client that the end of the response has been reached.
+            bool hasContentLength=response->getHeaders().contains("Content-Length");
+            if (!hasContentLength)
+            {
+                bool hasChunkedMode=QString::compare(response->getHeaders().value("Transfer-Encoding"),"chunked",Qt::CaseInsensitive)==0;
+                if (!hasChunkedMode)
+                {
+                    closeConnection=true;
+                }
+            }
+        }
+    }
+
+    // Close the connection or prepare for the next request on the same connection.
+    if (closeConnection)
+    {
+        while(socket->bytesToWrite()) socket->waitForBytesWritten();
+        socket->disconnectFromHost();
+    }
+    else
+    {
+        // Start timer for next request
+        int readTimeout=settings->value("readTimeout",10000).toInt();
+        readTimer.start(readTimeout);
+    }
+    
+    resetCurrentRequest();
 }

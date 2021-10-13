@@ -109,18 +109,21 @@ private:
 
     using RespondID = uint64_t;
     struct RespondInfo {
-        RespondInfo(std::shared_ptr<HttpResponse> response, std::future<QVariant>&& future)
+        RespondInfo(std::shared_ptr<HttpResponse> response, std::future<HttpRequestHandler::FinalizeFunctor>&& future, bool close)
             : ptrResponse(std::move(response))
-            , result(std::move(future))
+            , finalizeFunctor(std::move(future))
+            , closeConnection(close)
         {}
         std::shared_ptr<HttpResponse> ptrResponse;
-        std::future<QVariant> result;
+        std::future<HttpRequestHandler::FinalizeFunctor> finalizeFunctor;
+        bool closeConnection;
     };
     std::map<RespondID, RespondInfo> mapResponses;
+    void finalizeResponse(std::shared_ptr<HttpResponse> response, bool closeConnection);
 
 signals:
     void newHeadersHandler(const HeadersHandler& headersHandler);
-    void resposeSignal();
+    void responseSignal();
 
 public slots:
 
@@ -132,7 +135,7 @@ public slots:
 
     void resetCurrentRequest();
 
-    void resposeSlot();
+    void responseSlot();
 
 private slots:
 

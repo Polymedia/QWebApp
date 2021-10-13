@@ -24,7 +24,7 @@ namespace stefanfrings {
    that it is used by multiple threads simultaneously.
    @see StaticFileController which delivers static local files.
 */
-
+    
 class DECLSPEC HttpRequestHandler : public QObject {
     Q_OBJECT
     Q_DISABLE_COPY(HttpRequestHandler)
@@ -36,13 +36,14 @@ public:
      */
     HttpRequestHandler(QObject* parent=nullptr);
 
+    using FinalizeFunctor = std::function<void()>;
     /**
       Generate a response for an incoming HTTP request.
       @param request The received HTTP request
       @param response Must be used to return the response
       @warning This method must be thread safe
     */
-    virtual std::future<QVariant> service(const HttpRequest& request, std::shared_ptr<HttpResponse> response);
+    virtual std::future<FinalizeFunctor> service(const HttpRequest& request, std::shared_ptr<HttpResponse> response);
 };
 
 } // end of namespace
