@@ -60,7 +60,7 @@ public:
     StaticFileController(const QSettings* settings, QObject* parent = nullptr);
 
     /** Generates the response */
-    void service(const HttpRequest& request, HttpResponse& response);
+    std::future<QVariant> service(const HttpRequest& request, HttpResponse& response);
 
 private:
 

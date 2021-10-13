@@ -9,6 +9,7 @@
 #include "httpglobal.h"
 #include "httprequest.h"
 #include "httpresponse.h"
+#include <future>
 
 namespace stefanfrings {
 
@@ -41,8 +42,7 @@ public:
       @param response Must be used to return the response
       @warning This method must be thread safe
     */
-    virtual void service(const HttpRequest& request, HttpResponse& response);
-
+    virtual std::future<QVariant> service(const HttpRequest& request, std::shared_ptr<HttpResponse> response);
 };
 
 } // end of namespace

@@ -90,7 +90,7 @@ private:
     QTimer readTimer;
 
     /** Storage for the current incoming HTTP request */
-    HttpRequest* currentRequest;
+    std::shared_ptr<HttpRequest> currentRequest;
 
     /** Dispatches received requests to services */
     HttpRequestHandler* requestHandler;
@@ -107,8 +107,20 @@ private:
     /**  Handlers for headers checking **/
     HeadersHandler headersHandler;
 
+    using RespondID = uint64_t;
+    struct RespondInfo {
+        RespondInfo(std::shared_ptr<HttpResponse> response, std::future<QVariant>&& future)
+            : ptrResponse(std::move(response))
+            , result(std::move(future))
+        {}
+        std::shared_ptr<HttpResponse> ptrResponse;
+        std::future<QVariant> result;
+    };
+    std::map<RespondID, RespondInfo> mapResponses;
+
 signals:
     void newHeadersHandler(const HeadersHandler& headersHandler);
+    void resposeSignal();
 
 public slots:
 
@@ -117,6 +129,10 @@ public slots:
       @param socketDescriptor references the accepted connection.
     */
     void handleConnection(const tSocketDescriptor& socketDescriptor);
+
+    void resetCurrentRequest();
+
+    void resposeSlot();
 
 private slots:
 
