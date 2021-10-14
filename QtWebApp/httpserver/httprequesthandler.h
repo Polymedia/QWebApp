@@ -43,7 +43,7 @@ public:
       @param response Must be used to return the response
       @warning This method must be thread safe
     */
-    virtual std::future<FinalizeFunctor> service(const HttpRequest& request, std::shared_ptr<HttpResponse> response);
+    virtual std::future<FinalizeFunctor> service(std::shared_ptr <const stefanfrings::HttpRequest> request, std::shared_ptr<HttpResponse> response);
 };
 
 } // end of namespace

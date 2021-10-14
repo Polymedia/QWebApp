@@ -273,7 +273,7 @@ void HttpConnectionHandler::read()
             try
             {
                 static RespondID responseID = 0;
-                auto futureFinalization = requestHandler->service(*currentRequest, response);
+                auto futureFinalization = requestHandler->service(currentRequest, response);
                 mapResponses.emplace(responseID++, RespondInfo {response, std::move(futureFinalization), closeConnection } );
                 emit responseSignal();
             }
