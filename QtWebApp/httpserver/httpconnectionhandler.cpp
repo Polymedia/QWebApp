@@ -18,8 +18,8 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequ
     this->sslConfiguration=sslConfiguration;
     busy=false;
 
-    threadRead = new QThread();
-    threadRead->start();
+    threadRequestWorker = new QThread();
+    threadRequestWorker->start();
 
     // execute signals in a new thread
     thread = new QThread();
@@ -39,6 +39,9 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequ
     connect(&readTimer, SIGNAL(timeout()), SLOT(readTimeout()));
     connect(thread, SIGNAL(finished()), this, SLOT(thread_done()));
 
+    this->requestHandler->moveToThread(threadRequestWorker);
+    connect(this->requestHandler, &HttpRequestHandler::responseResultSignal, this, &HttpConnectionHandler::responseResultSlot, Qt::QueuedConnection);
+
     qDebug("HttpConnectionHandler (%p): constructed", static_cast<void*>(this));
 }
 
@@ -54,9 +57,9 @@ void HttpConnectionHandler::thread_done()
 
 HttpConnectionHandler::~HttpConnectionHandler()
 {
-    threadRead->quit();
-    threadRead->wait();
-    threadRead->deleteLater();
+    threadRequestWorker->quit();
+    threadRequestWorker->wait();
+    threadRequestWorker->deleteLater();
 
 
     thread->quit();
@@ -258,9 +261,6 @@ void HttpConnectionHandler::read()
             // Call the request mapper
             try
             {
-                requestHandler->moveToThread(threadRead);
-                connect(requestHandler, &HttpRequestHandler::responseResultSignal, this, &HttpConnectionHandler::responseResultSlot);
-
                 emit requestHandler->serviceSignal({ currentRequest, response, closeConnection });
             }
             catch (...)

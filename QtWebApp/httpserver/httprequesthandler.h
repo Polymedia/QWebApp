@@ -9,7 +9,6 @@
 #include "httpglobal.h"
 #include "httprequest.h"
 #include "httpresponse.h"
-#include <future>
 
 namespace stefanfrings {
 

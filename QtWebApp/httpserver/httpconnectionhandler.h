@@ -85,7 +85,7 @@ private:
 
     /** The thread that processes events of this connection */
     QThread* thread;
-    QThread* threadRead;
+    QThread* threadRequestWorker;
 
     /** Time for read timeout detection */
     QTimer readTimer;

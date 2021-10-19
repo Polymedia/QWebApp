@@ -37,12 +37,10 @@ StaticFileController::StaticFileController(const QSettings *settings, QObject* p
 }
 
 
-std::future<QVariant> StaticFileController::service(const HttpRequest& request, HttpResponse& response)
+void StaticFileController::service(ServiceParams params)
 {
-    // Initialize empty future
-    std::promise<QVariant> promise;
-    auto resultFuture = promise.get_future();
-    promise.set_value({});
+    auto& request = *params.request;
+    auto& response = *params.response;
 
     QByteArray path=request.getPath();
     // Check if we have the file in cache
@@ -71,7 +69,7 @@ std::future<QVariant> StaticFileController::service(const HttpRequest& request, 
             qWarning("StaticFileController: detected forbidden characters in path %s",path.constData());
             response.setStatus(403,"forbidden");
             response.write("403 forbidden",true);
-            return resultFuture;
+            return;
         }
         // If the filename is a directory, append index.html.
         if (QFileInfo(docroot+path).isDir())
@@ -125,8 +123,6 @@ std::future<QVariant> StaticFileController::service(const HttpRequest& request, 
             }
         }
     }
-
-    return resultFuture;
 }
 
 void StaticFileController::setContentType(const QString& fileName, HttpResponse& response) const
