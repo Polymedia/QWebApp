@@ -5,6 +5,7 @@
 
 #include "httprequesthandler.h"
 #include "QThread"
+#include "QtConcurrent/QtConcurrentRun"
 
 using namespace stefanfrings;
 
@@ -41,7 +42,7 @@ void HttpRequestHandler::service(ServiceParams params)
 
 void HttpRequestHandler::serviceSlot(ServiceParams params)
 {
-    service(params);
+    QtConcurrent::run(QThreadPool::globalInstance(), [this, params] { service(params); });
 }
 
 
