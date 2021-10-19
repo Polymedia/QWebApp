@@ -25,6 +25,7 @@ namespace stefanfrings {
 */
 
 struct ServiceParams {
+    const QObject* sender;
     std::shared_ptr <const stefanfrings::HttpRequest> request;
     std::shared_ptr<HttpResponse> response;
     bool closeConnection;
@@ -33,6 +34,7 @@ Q_DECLARE_METATYPE(ServiceParams)
 
 using FinalizeFunctor = std::function<void()>;
 struct ResponseResult {
+    const QObject* sender;
     std::shared_ptr<HttpResponse> response;
     FinalizeFunctor finalizer;
     bool closeConnection;

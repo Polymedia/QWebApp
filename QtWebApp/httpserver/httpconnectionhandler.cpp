@@ -138,15 +138,15 @@ void stefanfrings::HttpConnectionHandler::resetCurrentRequest()
 
 void HttpConnectionHandler::responseResultSocketSlot(ResponseResult responseResult)
 {
-    auto& [response, finalizer, closeConnection] = responseResult;
-    if (finalizer)
-        finalizer();
-    finalizeResponse(response, closeConnection);
+    if (responseResult.finalizer)
+        responseResult.finalizer();
+    finalizeResponse(responseResult.response, responseResult.closeConnection);
 }
 
 void HttpConnectionHandler::responseResultSlot(ResponseResult responseResult)
 {
-    emit responseResultSocketSignal(responseResult);
+    if (responseResult.sender == this)
+        emit responseResultSocketSignal(responseResult);
 }
 
 void HttpConnectionHandler::readTimeout()
@@ -258,7 +258,7 @@ void HttpConnectionHandler::read()
             // Call the request mapper
             try
             {
-                emit requestHandler->serviceSignal({ currentRequest, response, closeConnection });
+                emit requestHandler->serviceSignal({ this, currentRequest, response, closeConnection });
             }
             catch (...)
             {
