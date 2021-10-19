@@ -12,8 +12,8 @@ using namespace stefanfrings;
 HttpRequestHandler::HttpRequestHandler(QObject* parent)
     : QObject(parent)
 {
-    qRegisterMetaType<ServiceParams>("ServiceParams");
-    qRegisterMetaType<ResponseResult>("ResponseResult");
+    qRegisterMetaType<stefanfrings::ServiceParams>("ServiceParams");
+    qRegisterMetaType<stefanfrings::ResponseResult>("ResponseResult");
 
     connect(this, &HttpRequestHandler::serviceSignal, this, &HttpRequestHandler::serviceSlot, Qt::QueuedConnection);
 

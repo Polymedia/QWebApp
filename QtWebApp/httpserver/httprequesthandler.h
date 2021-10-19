@@ -30,7 +30,7 @@ struct ServiceParams {
     std::shared_ptr<HttpResponse> response;
     bool closeConnection;
 };
-Q_DECLARE_METATYPE(ServiceParams)
+Q_DECLARE_METATYPE(stefanfrings::ServiceParams)
 
 using FinalizeFunctor = std::function<void()>;
 struct ResponseResult {
@@ -39,7 +39,7 @@ struct ResponseResult {
     FinalizeFunctor finalizer;
     bool closeConnection;
 };
-Q_DECLARE_METATYPE(ResponseResult)
+Q_DECLARE_METATYPE(stefanfrings::ResponseResult)
 
 class DECLSPEC HttpRequestHandler : public QObject {
     Q_OBJECT
