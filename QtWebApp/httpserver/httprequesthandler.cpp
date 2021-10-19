@@ -4,15 +4,28 @@
 */
 
 #include "httprequesthandler.h"
+#include "QThread"
 
 using namespace stefanfrings;
 
 HttpRequestHandler::HttpRequestHandler(QObject* parent)
     : QObject(parent)
 {
-    connect(this, &HttpRequestHandler::serviceSignal, this, &HttpRequestHandler::serviceSlot);
     qRegisterMetaType<ServiceParams>("ServiceParams");
     qRegisterMetaType<ResponseResult>("ResponseResult");
+
+    connect(this, &HttpRequestHandler::serviceSignal, this, &HttpRequestHandler::serviceSlot, Qt::QueuedConnection);
+
+    threadRequestWorker = new QThread();
+    threadRequestWorker->start();
+    moveToThread(threadRequestWorker);
+}
+
+HttpRequestHandler::~HttpRequestHandler()
+{
+    threadRequestWorker->quit();
+    threadRequestWorker->wait();
+    threadRequestWorker->deleteLater();
 }
 
 void HttpRequestHandler::service(ServiceParams params)
@@ -30,3 +43,5 @@ void HttpRequestHandler::serviceSlot(ServiceParams params)
 {
     service(params);
 }
+
+

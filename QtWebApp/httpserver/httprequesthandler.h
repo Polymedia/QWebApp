@@ -49,6 +49,7 @@ public:
      * @param parent Parent object.
      */
     HttpRequestHandler(QObject* parent=nullptr);
+    ~HttpRequestHandler();
 
 signals:
     void serviceSignal(ServiceParams);
@@ -66,6 +67,8 @@ protected:
 */
     virtual void service(ServiceParams params);
 
+private:
+    QThread* threadRequestWorker;
 };
 
 } // end of namespace

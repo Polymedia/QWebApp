@@ -85,7 +85,6 @@ private:
 
     /** The thread that processes events of this connection */
     QThread* thread;
-    QThread* threadRequestWorker;
 
     /** Time for read timeout detection */
     QTimer readTimer;
@@ -112,6 +111,8 @@ private:
 
 signals:
     void newHeadersHandler(const HeadersHandler& headersHandler);
+    void responseResultSocketSignal(ResponseResult);
+
 
 public slots:
 
@@ -125,6 +126,7 @@ public slots:
 
 private slots:
     void responseResultSlot(ResponseResult);
+    void responseResultSocketSlot(ResponseResult);
 
     /** Received from the socket when a read-timeout occured */
     void readTimeout();

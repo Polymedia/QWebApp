@@ -8,18 +8,15 @@
 
 using namespace stefanfrings;
 
-HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequestHandler *requestHandler, const QSslConfiguration* sslConfiguration)
+HttpConnectionHandler::HttpConnectionHandler(const QSettings *aSettings, HttpRequestHandler *aRequestHandler, const QSslConfiguration* aSslConfiguration)
     : QObject()
 {
     Q_ASSERT(settings!=nullptr);
     Q_ASSERT(requestHandler!=nullptr);
-    this->settings=settings;
-    this->requestHandler=requestHandler;
-    this->sslConfiguration=sslConfiguration;
+    settings = aSettings;
+    requestHandler = aRequestHandler;
+    sslConfiguration = aSslConfiguration;
     busy=false;
-
-    threadRequestWorker = new QThread();
-    threadRequestWorker->start();
 
     // execute signals in a new thread
     thread = new QThread();
@@ -39,8 +36,8 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequ
     connect(&readTimer, SIGNAL(timeout()), SLOT(readTimeout()));
     connect(thread, SIGNAL(finished()), this, SLOT(thread_done()));
 
-    this->requestHandler->moveToThread(threadRequestWorker);
-    connect(this->requestHandler, &HttpRequestHandler::responseResultSignal, this, &HttpConnectionHandler::responseResultSlot, Qt::QueuedConnection);
+    connect(requestHandler, &HttpRequestHandler::responseResultSignal, this, &HttpConnectionHandler::responseResultSlot, Qt::QueuedConnection);
+    connect(this, &HttpConnectionHandler::responseResultSocketSignal, this, &HttpConnectionHandler::responseResultSocketSlot, Qt::QueuedConnection);
 
     qDebug("HttpConnectionHandler (%p): constructed", static_cast<void*>(this));
 }
@@ -57,11 +54,6 @@ void HttpConnectionHandler::thread_done()
 
 HttpConnectionHandler::~HttpConnectionHandler()
 {
-    threadRequestWorker->quit();
-    threadRequestWorker->wait();
-    threadRequestWorker->deleteLater();
-
-
     thread->quit();
     thread->wait();
     thread->deleteLater();
@@ -90,7 +82,7 @@ void HttpConnectionHandler::createSocket()
 void HttpConnectionHandler::handleConnection(const tSocketDescriptor& socketDescriptor)
 {
     qDebug("HttpConnectionHandler (%p): handle new connection", static_cast<void*>(this));
-    busy = true;
+    setBusy();
     Q_ASSERT(socket->isOpen()==false); // if not, then the handler is already busy
 
     //UGLY workaround - we need to clear writebuffer before reusing this socket
@@ -144,12 +136,17 @@ void stefanfrings::HttpConnectionHandler::resetCurrentRequest()
     currentRequest.reset();
 }
 
-void HttpConnectionHandler::responseResultSlot(ResponseResult responseResult)
+void HttpConnectionHandler::responseResultSocketSlot(ResponseResult responseResult)
 {
     auto& [response, finalizer, closeConnection] = responseResult;
     if (finalizer)
         finalizer();
     finalizeResponse(response, closeConnection);
+}
+
+void HttpConnectionHandler::responseResultSlot(ResponseResult responseResult)
+{
+    emit responseResultSocketSignal(responseResult);
 }
 
 void HttpConnectionHandler::readTimeout()
