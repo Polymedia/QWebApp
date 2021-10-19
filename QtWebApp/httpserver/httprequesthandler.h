@@ -3,8 +3,7 @@
   @author Stefan Frings
 */
 
-#ifndef HTTPREQUESTHANDLER_H
-#define HTTPREQUESTHANDLER_H
+#pragma once
 
 #include "httpglobal.h"
 #include "httprequest.h"
@@ -30,7 +29,6 @@ struct ServiceParams {
     std::shared_ptr<HttpResponse> response;
     bool closeConnection;
 };
-Q_DECLARE_METATYPE(stefanfrings::ServiceParams)
 
 using FinalizeFunctor = std::function<void()>;
 struct ResponseResult {
@@ -39,7 +37,6 @@ struct ResponseResult {
     FinalizeFunctor finalizer;
     bool closeConnection;
 };
-Q_DECLARE_METATYPE(stefanfrings::ResponseResult)
 
 class DECLSPEC HttpRequestHandler : public QObject {
     Q_OBJECT
@@ -75,4 +72,6 @@ private:
 
 } // end of namespace
 
-#endif // HTTPREQUESTHANDLER_H
+Q_DECLARE_METATYPE(stefanfrings::ServiceParams)
+Q_DECLARE_METATYPE(stefanfrings::ResponseResult)
+
