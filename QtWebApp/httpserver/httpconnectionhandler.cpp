@@ -18,6 +18,9 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequ
     this->sslConfiguration=sslConfiguration;
     busy=false;
 
+    threadRead = new QThread();
+    threadRead->start();
+
     // execute signals in a new thread
     thread = new QThread();
     thread->start();
@@ -36,8 +39,6 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequ
     connect(&readTimer, SIGNAL(timeout()), SLOT(readTimeout()));
     connect(thread, SIGNAL(finished()), this, SLOT(thread_done()));
 
-    connect(this, &HttpConnectionHandler::responseSignal, this, &HttpConnectionHandler::responseSlot, Qt::QueuedConnection);
-
     qDebug("HttpConnectionHandler (%p): constructed", static_cast<void*>(this));
 }
 
@@ -53,6 +54,11 @@ void HttpConnectionHandler::thread_done()
 
 HttpConnectionHandler::~HttpConnectionHandler()
 {
+    threadRead->quit();
+    threadRead->wait();
+    threadRead->deleteLater();
+
+
     thread->quit();
     thread->wait();
     thread->deleteLater();
@@ -135,31 +141,12 @@ void stefanfrings::HttpConnectionHandler::resetCurrentRequest()
     currentRequest.reset();
 }
 
-void HttpConnectionHandler::responseSlot()
+void HttpConnectionHandler::responseResultSlot(ResponseResult responseResult)
 {
-    using namespace std::chrono_literals;
-
-    bool ready = true;
-    while (ready && !mapResponses.empty())
-    {
-        RespondInfo& info = mapResponses.begin()->second;
-        if (std::future_status::ready == info.finalizeFunctor.wait_for(50ms))
-        {
-            auto finalization = info.finalizeFunctor.get();
-            auto ptrResponse = info.ptrResponse;
-            auto closeConnection = info.closeConnection;
-            mapResponses.erase(mapResponses.begin());
-
-            if (finalization)
-                finalization();
-            finalizeResponse(ptrResponse, closeConnection);
-        }
-        else
-            ready = false;
-    }
-
-    if(!ready)
-        emit responseSignal();
+    auto& [response, finalizer, closeConnection] = responseResult;
+    if (finalizer)
+        finalizer();
+    finalizeResponse(response, closeConnection);
 }
 
 void HttpConnectionHandler::readTimeout()
@@ -177,7 +164,6 @@ void HttpConnectionHandler::readTimeout()
 void HttpConnectionHandler::disconnected()
 {
     qDebug("HttpConnectionHandler (%p): disconnected", static_cast<void*>(this));
-    mapResponses.clear();
 
     socket->close();
     readTimer.stop();
@@ -272,10 +258,10 @@ void HttpConnectionHandler::read()
             // Call the request mapper
             try
             {
-                static RespondID responseID = 0;
-                auto futureFinalization = requestHandler->service(currentRequest, response);
-                mapResponses.emplace(responseID++, RespondInfo {response, std::move(futureFinalization), closeConnection } );
-                emit responseSignal();
+                requestHandler->moveToThread(threadRead);
+                connect(requestHandler, &HttpRequestHandler::responseResultSignal, this, &HttpConnectionHandler::responseResultSlot);
+
+                emit requestHandler->serviceSignal({ currentRequest, response, closeConnection });
             }
             catch (...)
             {

@@ -9,19 +9,24 @@ using namespace stefanfrings;
 
 HttpRequestHandler::HttpRequestHandler(QObject* parent)
     : QObject(parent)
-{}
-
-std::future<HttpRequestHandler::FinalizeFunctor> HttpRequestHandler::service(std::shared_ptr <const stefanfrings::HttpRequest> request, std::shared_ptr<stefanfrings::HttpResponse> response)
 {
+    connect(this, &HttpRequestHandler::serviceSignal, this, &HttpRequestHandler::serviceSlot);
+    qRegisterMetaType<ServiceParams>("ServiceParams");
+    qRegisterMetaType<ResponseResult>("ResponseResult");
+}
+
+void HttpRequestHandler::service(ServiceParams params)
+{
+    auto& request = params.request;
+    auto& response = params.response;
+
     qCritical("HttpRequestHandler: you need to override the service() function");
     qDebug("HttpRequestHandler: request=%s %s %s", request->getMethod().data(), request->getPath().data(), request->getVersion().data());
     response->setStatus(501,"not implemented");
     response->write("501 not implemented",true);
+}
 
-    std::promise<FinalizeFunctor> promise;
-
-    auto result = promise.get_future();
-    promise.set_value({});
-
-    return result;
+void HttpRequestHandler::serviceSlot(ServiceParams params)
+{
+    service(params);
 }

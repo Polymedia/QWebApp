@@ -85,6 +85,7 @@ private:
 
     /** The thread that processes events of this connection */
     QThread* thread;
+    QThread* threadRead;
 
     /** Time for read timeout detection */
     QTimer readTimer;
@@ -107,23 +108,10 @@ private:
     /**  Handlers for headers checking **/
     HeadersHandler headersHandler;
 
-    using RespondID = uint64_t;
-    struct RespondInfo {
-        RespondInfo(std::shared_ptr<HttpResponse> response, std::future<HttpRequestHandler::FinalizeFunctor>&& future, bool close)
-            : ptrResponse(std::move(response))
-            , finalizeFunctor(std::move(future))
-            , closeConnection(close)
-        {}
-        std::shared_ptr<HttpResponse> ptrResponse;
-        std::future<HttpRequestHandler::FinalizeFunctor> finalizeFunctor;
-        bool closeConnection;
-    };
-    std::map<RespondID, RespondInfo> mapResponses;
     void finalizeResponse(std::shared_ptr<HttpResponse> response, bool closeConnection);
 
 signals:
     void newHeadersHandler(const HeadersHandler& headersHandler);
-    void responseSignal();
 
 public slots:
 
@@ -135,9 +123,8 @@ public slots:
 
     void resetCurrentRequest();
 
-    void responseSlot();
-
 private slots:
+    void responseResultSlot(ResponseResult);
 
     /** Received from the socket when a read-timeout occured */
     void readTimeout();
