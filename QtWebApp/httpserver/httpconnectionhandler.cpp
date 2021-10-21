@@ -241,15 +241,13 @@ void HttpConnectionHandler::read()
                 // Copy the Connection:close header to the response
                 auto response = std::make_shared<HttpResponse>(socket);
                 bool closeConnection = QString::compare(currentRequest->getHeader("Connection"), "close", Qt::CaseInsensitive) == 0;
-                if (closeConnection)
-                    response->setHeader("Connection", "close");
-                else {
+                if (!closeConnection)
                     // In case of HTTP 1.0 protocol add the Connection:close header.
                     // This ensures that the HttpResponse does not activate chunked mode, which is not spported by HTTP 1.0.
                     closeConnection = QString::compare(currentRequest->getVersion(), "HTTP/1.0", Qt::CaseInsensitive) == 0;
-                    if (closeConnection)
-                        response->setHeader("Connection", "close");
-                }
+
+                if (closeConnection)
+                    response->setHeader("Connection", "close");
 
                 // Call the request mapper
                 try { //#snopko make try/catch not here
