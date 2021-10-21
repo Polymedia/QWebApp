@@ -76,6 +76,9 @@ public slots:
     void setHeadersHandler(const HeadersHandler& headersHandler);
 
 private:
+    void finalizeResponse(std::shared_ptr<HttpResponse> response, bool closeConnection);
+    void startTimer(); // Start timer for next request
+    void disconnectFromHost();
 
     /** Configuration settings */
     const QSettings* settings;
@@ -106,8 +109,6 @@ private:
 
     /**  Handlers for headers checking **/
     HeadersHandler headersHandler;
-
-    void finalizeResponse(std::shared_ptr<HttpResponse> response, bool closeConnection);
 
 signals:
     void newHeadersHandler(const HeadersHandler& headersHandler);

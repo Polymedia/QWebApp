@@ -37,7 +37,7 @@ StaticFileController::StaticFileController(const QSettings *settings, QObject* p
 }
 
 
-void StaticFileController::service(ServiceParams params)
+void StaticFileController::service(ServiceParams params) // #snopko finalizer
 {
     auto& request = *params.request;
     auto& response = *params.response;
