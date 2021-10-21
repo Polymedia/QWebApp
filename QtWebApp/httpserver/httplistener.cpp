@@ -83,7 +83,7 @@ void HttpListener::incomingConnection(tSocketDescriptor socketDescriptor) {
         qCritical("Pool is not initialized.");
     }
 
-    connect(this, &HttpListener::newHeadersHandler, freeHandler, &HttpConnectionHandler::setHeadersHandler);
+    connect(this, &HttpListener::newHeadersHandler, freeHandler, &HttpConnectionHandler::setHeadersHandler, Qt::DirectConnection);
 
     // Let the handler process the new connection.
     if (freeHandler)
