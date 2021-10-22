@@ -23,11 +23,20 @@ namespace stefanfrings {
    @see StaticFileController which delivers static local files.
 */
 
+class ICanceller {
+public:
+    virtual ~ICanceller() = default;
+    virtual void cancel() = 0;
+};
+using CancellerRef = std::shared_ptr<ICanceller>;
+using CancellerInitialization = std::function<void(CancellerRef)>;
+
 struct ServiceParams {
     const QObject* sender;
-    std::shared_ptr <const stefanfrings::HttpRequest> request;
+    std::shared_ptr<const stefanfrings::HttpRequest> request;
     std::shared_ptr<HttpResponse> response;
     bool closeConnection;
+    CancellerInitialization cancellerInitialization;
 };
 
 using FinalizeFunctor = std::function<void()>;

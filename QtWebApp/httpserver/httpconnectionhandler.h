@@ -17,6 +17,7 @@
 #include "httpheadershandler.h"
 #include "httprequest.h"
 #include "httprequesthandler.h"
+#include <mutex>
 
 namespace stefanfrings {
 
@@ -109,6 +110,9 @@ private:
 
     /**  Handlers for headers checking **/
     HeadersHandler headersHandler;
+
+    std::mutex  m_cancellerMutex;
+    CancellerRef m_canceller;
 
 signals:
     void newHeadersHandler(const HeadersHandler& headersHandler);
