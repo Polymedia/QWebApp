@@ -7,6 +7,7 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QDateTime>
+#include <mutex>
 
 using namespace stefanfrings;
 
@@ -45,13 +46,15 @@ void StaticFileController::service(ServiceParams params) // #snopko finalizer
     QByteArray path=request.getPath();
     // Check if we have the file in cache
     qint64 now=QDateTime::currentMSecsSinceEpoch();
-    mutex.lock();
+
+    std::unique_lock lock{ mutex };
+
     CacheEntry* entry=cache.object(path);
     if (entry && (cacheTimeout==0 || entry->created>now-cacheTimeout))
     {
         QByteArray document=entry->document; //copy the cached document, because other threads may destroy the cached entry immediately after mutex unlock.
         QByteArray filename=entry->filename;
-        mutex.unlock();
+        lock.unlock();
         qDebug("StaticFileController: Cache hit for %s",path.constData());
         setContentType(filename,response);
         response.setHeader("Cache-Control","max-age="+QByteArray::number(maxAge/1000));
@@ -59,7 +62,7 @@ void StaticFileController::service(ServiceParams params) // #snopko finalizer
     }
     else
     {
-        mutex.unlock();
+        lock.unlock();
         // The file is not in cache.
         qDebug("StaticFileController: Cache miss for %s",path.constData());
         // Forbid access to files outside the docroot directory
@@ -95,9 +98,11 @@ void StaticFileController::service(ServiceParams params) // #snopko finalizer
                 }
                 entry->created=now;
                 entry->filename=path;
-                mutex.lock();
+
+
+                lock.lock();
                 cache.insert(request.getPath(),entry,entry->document.size());
-                mutex.unlock();
+                lock.unlock();
             }
             else
             {
