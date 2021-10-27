@@ -180,9 +180,14 @@ void HttpConnectionHandler::disconnected()
     readTimer.stop();
     busy = false;
 
-    std::lock_guard lck{ m_cancellerMutex };
-    if (m_canceller)
-        m_canceller->cancel();
+    CancellerRef canceller;
+    {
+        std::lock_guard lck{ m_cancellerMutex };
+        canceller = m_canceller;
+    }
+
+    if (canceller)
+        canceller->cancel();
 }
 
 void HttpConnectionHandler::read()
