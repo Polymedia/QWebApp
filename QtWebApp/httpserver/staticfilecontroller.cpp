@@ -8,6 +8,7 @@
 #include <QDir>
 #include <QDateTime>
 #include <mutex>
+#include "httpconnectionhandler.h"
 
 using namespace stefanfrings;
 
@@ -38,27 +39,30 @@ StaticFileController::StaticFileController(const QSettings *settings, QObject* p
 }
 
 
-void StaticFileController::service(ServiceParams params) // #snopko finalizer
+void StaticFileController::service(ServiceParams params)
 {
     auto& request = *params.request;
     auto& response = *params.response;
 
+    auto response_write = [&response](const QByteArray& data, bool lastPart = false) {
+        response.getConnection().socketSafeExecution([&] { response.write(data, lastPart); });
+    };
+
     QByteArray path=request.getPath();
     // Check if we have the file in cache
-    qint64 now=QDateTime::currentMSecsSinceEpoch();
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
 
     std::unique_lock lock{ mutex };
 
     CacheEntry* entry=cache.object(path);
-    if (entry && (cacheTimeout==0 || entry->created>now-cacheTimeout))
-    {
+    if (entry && (cacheTimeout==0 || entry->created>now-cacheTimeout)) {
         QByteArray document=entry->document; //copy the cached document, because other threads may destroy the cached entry immediately after mutex unlock.
         QByteArray filename=entry->filename;
         lock.unlock();
         qDebug("StaticFileController: Cache hit for %s",path.constData());
         setContentType(filename,response);
         response.setHeader("Cache-Control","max-age="+QByteArray::number(maxAge/1000));
-        response.write(document);
+        response_write(document);
     }
     else
     {
@@ -71,60 +75,50 @@ void StaticFileController::service(ServiceParams params) // #snopko finalizer
         {
             qWarning("StaticFileController: detected forbidden characters in path %s",path.constData());
             response.setStatus(403,"forbidden");
-            response.write("403 forbidden",true);
+            response_write("403 forbidden",true);
             return;
         }
         // If the filename is a directory, append index.html.
         if (QFileInfo(docroot+path).isDir())
-        {
             path+="/index.html";
-        }
+
         // Try to open the file
         QFile file(docroot+path);
         qDebug("StaticFileController: Open file %s",qPrintable(file.fileName()));
-        if (file.open(QIODevice::ReadOnly))
-        {
+        if (file.open(QIODevice::ReadOnly)) {
             setContentType(path,response);
             response.setHeader("Cache-Control","max-age="+QByteArray::number(maxAge/1000));
-            if (file.size()<=maxCachedFileSize)
-            {
+            if (file.size()<=maxCachedFileSize) {
                 // Return the file content and store it also in the cache
                 entry=new CacheEntry();
-                while (!file.atEnd() && !file.error())
-                {
+                while (!file.atEnd() && !file.error()) {
                     QByteArray buffer=file.read(65536);
-                    response.write(buffer);
+                    response_write(buffer);
                     entry->document.append(buffer);
                 }
                 entry->created=now;
                 entry->filename=path;
 
-
                 lock.lock();
                 cache.insert(request.getPath(),entry,entry->document.size());
                 lock.unlock();
             }
-            else
-            {
+            else {
                 // Return the file content, do not store in cache
                 while (!file.atEnd() && !file.error())
-                {
-                    response.write(file.read(65536));
-                }
+                    response_write(file.read(65536));
             }
             file.close();
         }
         else {
-            if (file.exists())
-            {
+            if (file.exists()) {
                 qWarning("StaticFileController: Cannot open existing file %s for reading",qPrintable(file.fileName()));
                 response.setStatus(403,"forbidden");
-                response.write("403 forbidden",true);
+                response_write("403 forbidden",true);
             }
-            else
-            {
+            else {
                 response.setStatus(404,"not found");
-                response.write("404 not found",true);
+                response_write("404 not found",true);
             }
         }
     }

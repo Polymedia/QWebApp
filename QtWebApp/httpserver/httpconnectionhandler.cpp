@@ -5,6 +5,7 @@
 
 #include "httpconnectionhandler.h"
 #include "httpresponse.h"
+#include <future>
 
 using namespace stefanfrings;
 
@@ -36,6 +37,7 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *aSettings, HttpReq
     connect(&readTimer, SIGNAL(timeout()), SLOT(readTimeout()));
     connect(thread, SIGNAL(finished()), this, SLOT(thread_done()));
 
+    connect(this, &HttpConnectionHandler::queueFunctionSignal, this, &HttpConnectionHandler::queueFunctionSlot, Qt::QueuedConnection);
     connect(requestHandler, &HttpRequestHandler::responseResultSignal, this, &HttpConnectionHandler::responseResultSlot, Qt::QueuedConnection);
     connect(this, &HttpConnectionHandler::responseResultSocketSignal, this, &HttpConnectionHandler::responseResultSocketSlot, Qt::QueuedConnection);
 
@@ -248,7 +250,7 @@ void HttpConnectionHandler::read()
                 qDebug("HttpConnectionHandler (%p): received request", static_cast<void*>(this));
 
                 // Copy the Connection:close header to the response
-                auto response = std::make_shared<HttpResponse>(socket);
+                auto response = std::make_shared<HttpResponse>(socket, *this);
                 bool closeConnection = QString::compare(currentRequest->getHeader("Connection"), "close", Qt::CaseInsensitive) == 0;
                 if (!closeConnection)
                     // In case of HTTP 1.0 protocol add the Connection:close header.
@@ -273,6 +275,21 @@ void HttpConnectionHandler::read()
             }
         }
     }
+}
+
+void HttpConnectionHandler::socketSafeExecution(QueuedFunction function)
+{
+    std::promise<void> promise;
+    auto future = promise.get_future();
+
+    m_queuedFunction = [function, &promise] {
+        function();
+        promise.set_value();
+    };
+
+    emit queueFunctionSignal();
+
+    future.get();
 }
 
 void HttpConnectionHandler::finalizeResponse(std::shared_ptr<HttpResponse> response, bool closeConnection)
@@ -305,4 +322,9 @@ void HttpConnectionHandler::finalizeResponse(std::shared_ptr<HttpResponse> respo
     }
     
     resetCurrentRequest();
+}
+
+void HttpConnectionHandler::queueFunctionSlot()
+{
+    m_queuedFunction();
 }
