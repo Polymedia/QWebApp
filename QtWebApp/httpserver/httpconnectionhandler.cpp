@@ -292,18 +292,23 @@ void HttpConnectionHandler::socketSafeExecution(QueuedFunction function)
     future.get();
 }
 
+void HttpConnectionHandler::queueFunctionSlot()
+{
+    m_queuedFunction();
+}
+
 void HttpConnectionHandler::finalizeResponse(std::shared_ptr<HttpResponse> response, bool closeConnection)
 {
     // Finalize sending the response if not already done
     if (!response->hasSentLastPart())
-        response->write(QByteArray(),true);
+        response->write(QByteArray(), true);
 
-    qDebug("HttpConnectionHandler (%p): finished request",static_cast<void*>(this));
+    qDebug("HttpConnectionHandler (%p): finished request", static_cast<void*>(this));
 
     // Find out whether the connection must be closed
     if (!closeConnection) {
         // Maybe the request handler or mapper added a Connection:close header in the meantime
-        closeConnection = QString::compare(response->getHeaders().value("Connection"),"close",Qt::CaseInsensitive)==0;
+        closeConnection = QString::compare(response->getHeaders().value("Connection"), "close", Qt::CaseInsensitive)==0;
         if (!closeConnection)
         {
             // If we have no Content-Length header and did not use chunked mode, then we have to close the
@@ -317,14 +322,8 @@ void HttpConnectionHandler::finalizeResponse(std::shared_ptr<HttpResponse> respo
     // Close the connection or prepare for the next request on the same connection.
     if (closeConnection)
         disconnectFromHost();
-    else {
+    else
         startTimer();
-    }
     
     resetCurrentRequest();
-}
-
-void HttpConnectionHandler::queueFunctionSlot()
-{
-    m_queuedFunction();
 }
