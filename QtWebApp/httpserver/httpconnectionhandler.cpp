@@ -261,17 +261,11 @@ void HttpConnectionHandler::read()
                     response->setHeader("Connection", "close");
 
                 // Call the request mapper
-                try { //#snopko make try/catch not here
-                    auto onInitCanceller = [this](CancellerRef ref) {
-                        std::lock_guard lock{ m_cancellerMutex };
-                        m_canceller = ref;
-                    };
-                    emit requestHandler->serviceSignal({ this, currentRequest, response, closeConnection, onInitCanceller });
-                }
-                catch (...) {
-                    qCritical("HttpConnectionHandler (%p): An uncatched exception occured in the request handler",
-                        static_cast<void*>(this));
-                }
+                auto onInitCanceller = [this](CancellerRef ref) {
+                    std::lock_guard lock{ m_cancellerMutex };
+                    m_canceller = ref;
+                };
+                emit requestHandler->serviceSignal({ this, currentRequest, response, closeConnection, onInitCanceller });
             }
         }
     }
