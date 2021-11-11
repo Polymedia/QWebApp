@@ -3,7 +3,8 @@
   @author Stefan Frings
 */
 
-#pragma once
+#ifndef HTTPREQUESTHANDLER_H
+#define HTTPREQUESTHANDLER_H
 
 #include "httpglobal.h"
 #include "httprequest.h"
@@ -35,7 +36,7 @@ struct ServiceParams {
     const QObject* sender;
     std::shared_ptr<const stefanfrings::HttpRequest> request;
     std::shared_ptr<HttpResponse> response;
-    bool closeConnection;
+    bool closeSocketAfterResponse;
     CancellerInitialization cancellerInitialization;
 };
 
@@ -44,7 +45,7 @@ struct ResponseResult {
     const QObject* sender;
     std::shared_ptr<HttpResponse> response;
     FinalizeFunctor finalizer;
-    bool closeConnection;
+    bool closeSocketAfterResponse;
 };
 
 class DECLSPEC HttpRequestHandler : public QObject {
@@ -60,19 +61,19 @@ public:
     ~HttpRequestHandler();
 
 signals:
-    void serviceSignal(ServiceParams);
+    void serviceSignal(ServiceParams); // Signal to perform HttpRequestHandler::service
     void responseResultSignal(ResponseResult);
 
 private slots:
     void serviceSlot(ServiceParams params);
 
 protected:
-/**
-  Generate a response for an incoming HTTP request.
-  @param request The received HTTP request
-  @param response Must be used to return the response
-  @warning This method must be thread safe
-*/
+    /**
+      Generate a response for an incoming HTTP request.
+      @param request The received HTTP request
+      @param response Must be used to return the response
+      @warning This method must be thread safe
+    */
     virtual void service(ServiceParams params);
 
 private:
@@ -84,3 +85,4 @@ private:
 Q_DECLARE_METATYPE(stefanfrings::ServiceParams)
 Q_DECLARE_METATYPE(stefanfrings::ResponseResult)
 
+#endif // HTTPREQUESTHANDLER_H

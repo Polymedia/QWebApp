@@ -8,7 +8,7 @@
 using namespace stefanfrings;
 
 HttpResponse::HttpResponse(QTcpSocket *socket, HttpConnectionHandler& connectionHandler)
-    : connection(connectionHandler)
+    : connectionHandler(connectionHandler)
 {
     this->socket=socket;
     statusCode=200;

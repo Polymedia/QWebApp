@@ -81,7 +81,7 @@ public slots:
 
 private:
     void finalizeResponse(std::shared_ptr<HttpResponse> response, bool closeConnection);
-    void queueFunctionSlot();
+    void queuedFunctionSlot();
     void startTimer(); // Start timer for next request
     void disconnectFromHost();
 

@@ -4,8 +4,7 @@
 */
 
 #include "httprequesthandler.h"
-#include "QThread"
-#include "QtConcurrent/QtConcurrentRun"
+#include <QtConcurrent/QtConcurrentRun>
 
 using namespace stefanfrings;
 

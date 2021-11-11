@@ -109,7 +109,7 @@ public:
     void setCookie(const HttpCookie& cookie);
 
     QTcpSocket *getSocket() const { return socket; }
-    HttpConnectionHandler& getConnection() { return connection; }
+    HttpConnectionHandler& getConnectionHandler() { return connectionHandler; }
     /**
       Send a redirect response to the browser.
       Cannot be combined with write().
@@ -135,7 +135,7 @@ protected:
     QTcpSocket* socket;
 
 private:
-    HttpConnectionHandler& connection;
+    HttpConnectionHandler& connectionHandler;
 
     /** Request headers */
     QMap<QByteArray,QByteArray> headers;
