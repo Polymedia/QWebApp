@@ -14,7 +14,7 @@ HttpRequestHandler::HttpRequestHandler(QObject* parent)
     qRegisterMetaType<stefanfrings::ServiceParams>("ServiceParams");
     qRegisterMetaType<stefanfrings::ResponseResult>("ResponseResult");
 
-    connect(this, &HttpRequestHandler::serviceSignal, this, &HttpRequestHandler::serviceSlot, Qt::QueuedConnection);
+    connect(this, &HttpRequestHandler::serviceSignal, this, &HttpRequestHandler::onServiceSignal, Qt::QueuedConnection);
 
     threadRequestWorker = new QThread();
     threadRequestWorker->start();
@@ -39,7 +39,7 @@ void HttpRequestHandler::service(ServiceParams params)
     response->write("501 not implemented",true);
 }
 
-void HttpRequestHandler::serviceSlot(ServiceParams params)
+void HttpRequestHandler::onServiceSignal(ServiceParams params)
 {
     QtConcurrent::run(QThreadPool::globalInstance(), [this, params] {
         try {

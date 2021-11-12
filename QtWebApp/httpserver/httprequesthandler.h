@@ -65,7 +65,7 @@ signals:
     void responseResultSignal(ResponseResult);
 
 private slots:
-    void serviceSlot(ServiceParams params);
+    void onServiceSignal(ServiceParams params);
 
 protected:
     /**

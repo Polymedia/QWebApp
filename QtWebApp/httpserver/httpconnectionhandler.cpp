@@ -37,9 +37,9 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequ
     connect(&readTimer, SIGNAL(timeout()), SLOT(readTimeout()));
     connect(thread, SIGNAL(finished()), this, SLOT(thread_done()));
 
-    connect(this, &HttpConnectionHandler::queueFunctionSignal, this, &HttpConnectionHandler::queuedFunctionSlot, Qt::QueuedConnection);
-    connect(requestHandler, &HttpRequestHandler::responseResultSignal, this, &HttpConnectionHandler::responseResultSlot, Qt::QueuedConnection);
-    connect(this, &HttpConnectionHandler::responseResultSocketSignal, this, &HttpConnectionHandler::responseResultSocketSlot, Qt::QueuedConnection);
+    connect(this, &HttpConnectionHandler::queueFunctionSignal, this, &HttpConnectionHandler::onQueueFunctionSignal, Qt::QueuedConnection);
+    connect(requestHandler, &HttpRequestHandler::responseResultSignal, this, &HttpConnectionHandler::onResponseResultSignal, Qt::QueuedConnection);
+    connect(this, &HttpConnectionHandler::responseResultSocketSignal, this, &HttpConnectionHandler::onResponseResultSocketSignal, Qt::QueuedConnection);
 
     qDebug("HttpConnectionHandler (%p): constructed", static_cast<void*>(this));
 }
@@ -151,14 +151,14 @@ void stefanfrings::HttpConnectionHandler::resetCurrentRequest()
     currentRequest.reset();
 }
 
-void HttpConnectionHandler::responseResultSocketSlot(ResponseResult responseResult)
+void HttpConnectionHandler::onResponseResultSocketSignal(ResponseResult responseResult)
 {
     if (responseResult.finalizer)
         responseResult.finalizer();
     finalizeResponse(responseResult.response, responseResult.closeSocketAfterResponse);
 }
 
-void HttpConnectionHandler::responseResultSlot(ResponseResult responseResult)
+void HttpConnectionHandler::onResponseResultSignal(ResponseResult responseResult)
 {
     if (responseResult.sender == this)
         emit responseResultSocketSignal(responseResult);
@@ -179,7 +179,7 @@ void HttpConnectionHandler::socketSafeExecution(QueuedFunction function)
     future.get();
 }
 
-void HttpConnectionHandler::queuedFunctionSlot()
+void HttpConnectionHandler::onQueueFunctionSignal()
 {
     m_queuedFunction();
 }

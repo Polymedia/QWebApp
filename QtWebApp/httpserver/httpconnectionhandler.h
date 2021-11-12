@@ -81,7 +81,7 @@ public slots:
 
 private:
     void finalizeResponse(std::shared_ptr<HttpResponse> response, bool closeConnection);
-    void queuedFunctionSlot();
+    void onQueueFunctionSignal();
     void startTimer(); // Start timer for next request
     void disconnectFromHost();
 
@@ -136,8 +136,8 @@ public slots:
     void resetCurrentRequest();
 
 private slots:
-    void responseResultSlot(ResponseResult);
-    void responseResultSocketSlot(ResponseResult);
+    void onResponseResultSignal(ResponseResult);
+    void onResponseResultSocketSignal(ResponseResult);
 
     /** Received from the socket when a read-timeout occured */
     void readTimeout();
