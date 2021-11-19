@@ -58,14 +58,12 @@ public:
      * @param parent Parent object.
      */
     HttpRequestHandler(QObject* parent=nullptr);
-    ~HttpRequestHandler();
+    ~HttpRequestHandler() = default;
+
+	void callService(ServiceParams params);
 
 signals:
-    void serviceSignal(ServiceParams); // Signal to perform HttpRequestHandler::service
     void responseResultSignal(ResponseResult);
-
-private slots:
-    void onServiceSignal(ServiceParams params);
 
 protected:
     /**
@@ -75,9 +73,6 @@ protected:
       @warning This method must be thread safe
     */
     virtual void service(ServiceParams params);
-
-private:
-    QThread* threadRequestWorker;
 };
 
 } // end of namespace

@@ -39,7 +39,6 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequ
 
     connect(this, &HttpConnectionHandler::queueFunctionSignal, this, &HttpConnectionHandler::onQueueFunctionSignal, Qt::QueuedConnection);
     connect(requestHandler, &HttpRequestHandler::responseResultSignal, this, &HttpConnectionHandler::onResponseResultSignal, Qt::QueuedConnection);
-    connect(this, &HttpConnectionHandler::responseResultSocketSignal, this, &HttpConnectionHandler::onResponseResultSocketSignal, Qt::QueuedConnection);
 
     qDebug("HttpConnectionHandler (%p): constructed", static_cast<void*>(this));
 }
@@ -151,17 +150,13 @@ void stefanfrings::HttpConnectionHandler::resetCurrentRequest()
     currentRequest.reset();
 }
 
-void HttpConnectionHandler::onResponseResultSocketSignal(ResponseResult responseResult)
-{
-    if (responseResult.finalizer)
-        responseResult.finalizer();
-    finalizeResponse(responseResult.response, responseResult.closeSocketAfterResponse);
-}
-
 void HttpConnectionHandler::onResponseResultSignal(ResponseResult responseResult)
 {
-    if (responseResult.sender == this)
-        emit responseResultSocketSignal(responseResult);
+	if (responseResult.sender == this) {
+		if (responseResult.finalizer)
+			responseResult.finalizer();
+		finalizeResponse(responseResult.response, responseResult.closeSocketAfterResponse);
+	}
 }
 
 void HttpConnectionHandler::socketSafeExecution(QueuedFunction function)
@@ -278,16 +273,14 @@ void HttpConnectionHandler::read()
                     closeConnection = QString::compare(currentRequest->getVersion(), "HTTP/1.0", Qt::CaseInsensitive) == 0;
 
                 if (closeConnection)
-                {
                     response->setHeader("Connection", "close");
-                }
 
                 // Call the request mapper
                 auto onInitCanceller = [this](CancellerRef ref) {
                     std::lock_guard lock{ m_cancellerMutex };
                     m_canceller = ref;
                 };
-                emit requestHandler->serviceSignal({ this, currentRequest, response, closeConnection, onInitCanceller });
+                requestHandler->callService({ this, currentRequest, response, closeConnection, onInitCanceller });
             }
         }
     }

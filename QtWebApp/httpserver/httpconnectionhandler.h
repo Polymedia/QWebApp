@@ -137,7 +137,6 @@ public slots:
 
 private slots:
     void onResponseResultSignal(ResponseResult);
-    void onResponseResultSocketSignal(ResponseResult);
 
     /** Received from the socket when a read-timeout occured */
     void readTimeout();
