@@ -5,6 +5,7 @@
 
 #include "httprequesthandler.h"
 #include <QtConcurrent/QtConcurrentRun>
+#include <thread>
 
 using namespace stefanfrings;
 
@@ -28,7 +29,7 @@ void HttpRequestHandler::service(ServiceParams params)
 
 void HttpRequestHandler::callService(ServiceParams params)
 {
-    QtConcurrent::run([this, params] {
+    std::thread([this, params] {
         try {
             service(params);
         }
@@ -40,7 +41,7 @@ void HttpRequestHandler::callService(ServiceParams params)
             qCritical("HttpConnectionHandler (%p): An uncatched exception occured in the request handler",
                 static_cast<void*>(this));
         }
-    });
+    }).detach();
 }
 
 
