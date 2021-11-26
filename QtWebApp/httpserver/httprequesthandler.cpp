@@ -9,12 +9,12 @@
 
 using namespace stefanfrings;
 
+static const auto isRegisteredServiceParams = qRegisterMetaType<ServiceParams>("ServiceParams");
+static const auto isRegisteredResponseResult = qRegisterMetaType<ResponseResult>("ResponseResult");
+
 HttpRequestHandler::HttpRequestHandler(QObject* parent)
     : QObject(parent)
-{
-    qRegisterMetaType<stefanfrings::ServiceParams>("ServiceParams");
-    qRegisterMetaType<stefanfrings::ResponseResult>("ResponseResult");
-}
+{}
 
 void HttpRequestHandler::service(ServiceParams params)
 {
