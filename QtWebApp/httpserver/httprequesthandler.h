@@ -24,6 +24,30 @@ namespace stefanfrings {
    @see StaticFileController which delivers static local files.
 */
 
+class ICanceller {
+public:
+    virtual ~ICanceller() = default;
+    virtual void cancel() = 0;
+};
+using CancellerRef = std::shared_ptr<ICanceller>;
+using CancellerInitialization = std::function<void(CancellerRef)>;
+
+struct ServiceParams {
+    const QObject* sender;
+    std::shared_ptr<const stefanfrings::HttpRequest> request;
+    std::shared_ptr<HttpResponse> response;
+    bool closeSocketAfterResponse;
+    CancellerInitialization cancellerInitialization;
+};
+
+using FinalizeFunctor = std::function<void()>;
+struct ResponseResult {
+    const QObject* sender;
+    std::shared_ptr<HttpResponse> response;
+    FinalizeFunctor finalizer;
+    bool closeSocketAfterResponse;
+};
+
 class DECLSPEC HttpRequestHandler : public QObject {
     Q_OBJECT
     Q_DISABLE_COPY(HttpRequestHandler)
@@ -34,17 +58,26 @@ public:
      * @param parent Parent object.
      */
     HttpRequestHandler(QObject* parent=nullptr);
+    ~HttpRequestHandler() = default;
 
+	void callService(ServiceParams params);
+
+signals:
+    void responseResultSignal(ResponseResult);
+
+protected:
     /**
       Generate a response for an incoming HTTP request.
       @param request The received HTTP request
       @param response Must be used to return the response
       @warning This method must be thread safe
     */
-    virtual void service(const HttpRequest& request, HttpResponse& response);
-
+    virtual void service(ServiceParams params);
 };
 
 } // end of namespace
+
+Q_DECLARE_METATYPE(stefanfrings::ServiceParams)
+Q_DECLARE_METATYPE(stefanfrings::ResponseResult)
 
 #endif // HTTPREQUESTHANDLER_H

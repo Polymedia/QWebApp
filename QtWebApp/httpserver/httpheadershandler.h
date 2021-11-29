@@ -6,6 +6,8 @@
 #ifndef HTTPHEADERSHANDLER_H
 #define HTTPHEADERSHANDLER_H
 
+#include <qmetatype.h>
+
 #include <functional>
 #include <vector>
 
@@ -50,5 +52,7 @@ typedef std::tuple<std::vector<std::function<HeadersCheckingStatus(const HttpReq
 
 const QByteArray &getHeaderValueRef(const Headers &container, const QByteArray &key);
 } // namespace stefanfrings
+
+Q_DECLARE_METATYPE(stefanfrings::HeadersHandler)
 
 #endif // HTTPHEADERSHANDLER_H
