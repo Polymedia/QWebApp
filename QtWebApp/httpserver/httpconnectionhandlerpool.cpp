@@ -34,9 +34,9 @@ HttpConnectionHandlerPool::~HttpConnectionHandlerPool()
 }
 
 
-HttpConnectionHandler* HttpConnectionHandlerPool::getConnectionHandler()
+HttpConnectionHandler* HttpConnectionHandlerPool::getConnectionHandler(bool* isNew /*= nullptr*/)
 {
-    HttpConnectionHandler* freeHandler=0;
+    HttpConnectionHandler* freeHandler=nullptr;
     std::lock_guard lock {mutex};
 
     // find a free handler in pool
@@ -49,6 +49,10 @@ HttpConnectionHandler* HttpConnectionHandlerPool::getConnectionHandler()
             break;
         }
     }
+
+    if (isNew)
+        *isNew = (freeHandler == nullptr);
+
     // create a new handler, if necessary
     if (!freeHandler)
     {

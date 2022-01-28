@@ -62,7 +62,7 @@ public:
     virtual ~HttpConnectionHandlerPool();
 
     /** Get a free connection handler, or 0 if not available. */
-    HttpConnectionHandler* getConnectionHandler();
+    HttpConnectionHandler* getConnectionHandler(bool* isNew = nullptr);
 
 private:
 
