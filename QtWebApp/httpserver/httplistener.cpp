@@ -75,19 +75,18 @@ void HttpListener::incomingConnection(tSocketDescriptor socketDescriptor) {
 
     HttpConnectionHandler* freeHandler=nullptr;
 
-    bool needConnect = true;
-
     if (pool)
     {
+        bool needConnect = true;
         freeHandler=pool->getConnectionHandler(&needConnect);
+        if (needConnect)
+            connect(this, &HttpListener::newHeadersHandler, freeHandler, &HttpConnectionHandler::setHeadersHandler);
     }
     else
     {
         qCritical("Pool is not initialized.");
     }
 
-    if (needConnect)
-        connect(this, &HttpListener::newHeadersHandler, freeHandler, &HttpConnectionHandler::setHeadersHandler);
 
     // Let the handler process the new connection.
     if (freeHandler)
