@@ -194,7 +194,9 @@ void HttpConnectionHandler::disconnected()
     qDebug("HttpConnectionHandler (%p): disconnected", static_cast<void*>(this));
     socket->close();
     readTimer.stop();
-    busy = false;
+
+    if (!currentRequest)
+        busy = false;
 
     CancellerRef canceller;
     {
@@ -312,6 +314,7 @@ void HttpConnectionHandler::finalizeResponse(std::shared_ptr<HttpResponse> respo
     if (closeConnection)
     {
         disconnectFromHost();
+        busy = false;
     }
     else
     {
