@@ -104,7 +104,7 @@ private:
     HttpRequestHandler* requestHandler;
 
     /** This shows the busy-state from a very early time */
-    bool busy;
+    std::atomic_bool busy;
 
     /** Configuration for SSL */
     const QSslConfiguration* sslConfiguration;
