@@ -81,6 +81,8 @@ private:
     /** Used to synchronize threads */
     QMutex mutex;
 
+    QThread *newThread;
+
     /** The SSL configuration (certificate, key and other settings) */
     QSslConfiguration* sslConfiguration;
 

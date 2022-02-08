@@ -60,7 +60,7 @@ public:
       @param requestHandler Handler that will process each incoming HTTP request
       @param sslConfiguration SSL (HTTPS) will be used if not NULL
     */
-    HttpConnectionHandler(const QSettings* settings, HttpRequestHandler* requestHandler,
+    HttpConnectionHandler(QThread* thread, const QSettings* settings, HttpRequestHandler* requestHandler,
                           const QSslConfiguration* sslConfiguration=nullptr);
 
     /** Destructor */
@@ -92,7 +92,7 @@ private:
     QTcpSocket* socket;
 
     /** The thread that processes events of this connection */
-    QThread* thread;
+    //QThread* thread;
 
     /** Time for read timeout detection */
     QTimer readTimer;

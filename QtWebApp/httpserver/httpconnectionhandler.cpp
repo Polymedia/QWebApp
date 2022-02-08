@@ -9,7 +9,7 @@
 
 using namespace stefanfrings;
 
-HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequestHandler *requestHandler, const QSslConfiguration* sslConfiguration)
+HttpConnectionHandler::HttpConnectionHandler(QThread *thread, const QSettings *settings, HttpRequestHandler *requestHandler, const QSslConfiguration* sslConfiguration)
     : QObject()
 {
     Q_ASSERT(settings!=nullptr);
@@ -20,8 +20,8 @@ HttpConnectionHandler::HttpConnectionHandler(const QSettings *settings, HttpRequ
     busy=false;
 
     // execute signals in a new thread
-    thread = new QThread();
-    thread->start();
+    //thread = new QThread();
+    //thread->start();
     qDebug("HttpConnectionHandler (%p): thread started", static_cast<void*>(this));
     moveToThread(thread);
     readTimer.moveToThread(thread);
@@ -55,9 +55,9 @@ void HttpConnectionHandler::thread_done()
 
 HttpConnectionHandler::~HttpConnectionHandler()
 {
-    thread->quit();
-    thread->wait();
-    thread->deleteLater();
+    //thread->quit();
+    //thread->wait();
+    //thread->deleteLater();
     qDebug("HttpConnectionHandler (%p): destroyed", static_cast<void*>(this));
 }
 

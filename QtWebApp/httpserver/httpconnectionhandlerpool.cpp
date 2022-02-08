@@ -19,6 +19,9 @@ HttpConnectionHandlerPool::HttpConnectionHandlerPool(const QSettings *settings, 
     loadSslConfig();
     cleanupTimer.start(settings->value("cleanupInterval",1000).toInt());
     connect(&cleanupTimer, SIGNAL(timeout()), SLOT(cleanup()));
+
+    newThread = new QThread();
+    newThread->start();
 }
 
 
@@ -31,6 +34,9 @@ HttpConnectionHandlerPool::~HttpConnectionHandlerPool()
     }
     delete sslConfiguration;
     qDebug("HttpConnectionHandlerPool (%p): destroyed", this);
+
+    newThread->quit();
+    newThread->wait();
 }
 
 
@@ -59,9 +65,15 @@ HttpConnectionHandler* HttpConnectionHandlerPool::getConnectionHandler(bool* isN
         int maxConnectionHandlers=settings->value("maxThreads",100).toInt();
         if (pool.count()<maxConnectionHandlers)
         {
-            freeHandler=new HttpConnectionHandler(settings,requestHandler,sslConfiguration);
+            freeHandler=new HttpConnectionHandler(newThread, settings,requestHandler,sslConfiguration);
             freeHandler->setBusy();
             pool.append(freeHandler);
+
+            //freeHandler->moveToThread(newThread);
+            //connect(newThread, &QThread::finished, freeHandler, &QObject::deleteLater);
+
+            //connect(this, &Controller::operate, worker, &Worker::doWork);
+            //connect(worker, &Worker::resultReady, this, &Controller::handleResults);
         }
         else
         {
