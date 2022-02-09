@@ -30,7 +30,7 @@ HttpConnectionHandlerPool::~HttpConnectionHandlerPool()
     // delete all connection handlers and wait until their threads are closed
     foreach(HttpConnectionHandler* handler, pool)
     {
-       delete handler;
+        handler->deleteLater();
     }
     delete sslConfiguration;
     qDebug("HttpConnectionHandlerPool (%p): destroyed", this);
@@ -97,7 +97,7 @@ void HttpConnectionHandlerPool::cleanup()
         {
             if (++idleCounter > maxIdleHandlers)
             {
-                delete handler;
+                handler->deleteLater();
                 pool.removeOne(handler);
                 qDebug("HttpConnectionHandlerPool: Removed connection handler (%p), pool size is now %i",handler,pool.size());
                 break; // remove only one handler in each interval
