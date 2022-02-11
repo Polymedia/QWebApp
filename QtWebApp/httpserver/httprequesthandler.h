@@ -32,12 +32,22 @@ public:
 using CancellerRef = std::shared_ptr<ICanceller>;
 using CancellerInitialization = std::function<void(CancellerRef)>;
 
+enum class CloseSocket : int {
+    NO = 0,
+    YES = 1,
+};
+
 struct ServiceParams {
     const QObject* sender;
     std::shared_ptr<const stefanfrings::HttpRequest> request;
     std::shared_ptr<HttpResponse> response;
-    bool closeSocketAfterResponse;
+    CloseSocket closeSocketAfterResponse;
     CancellerInitialization cancellerInitialization;
+};
+
+enum class WriteToSocket : int {
+    NO = 0,
+    YES = 1,
 };
 
 using FinalizeFunctor = std::function<void()>;
@@ -45,7 +55,8 @@ struct ResponseResult {
     const QObject* sender;
     std::shared_ptr<HttpResponse> response;
     FinalizeFunctor finalizer;
-    bool closeSocketAfterResponse;
+    CloseSocket closeSocketAfterResponse;
+    WriteToSocket isWriteToSocket;
 };
 
 class DECLSPEC HttpRequestHandler : public QObject {

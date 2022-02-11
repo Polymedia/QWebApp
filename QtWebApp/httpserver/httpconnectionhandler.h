@@ -80,7 +80,7 @@ public slots:
     void setHeadersHandler(const HeadersHandler& headersHandler);
 
 private:
-    void finalizeResponse(std::shared_ptr<HttpResponse> response, bool closeConnection);
+    void finalizeResponse(std::shared_ptr<HttpResponse> response, CloseSocket closeConnection);
     void onQueueFunctionSignal();
     void startTimer(); // Start timer for next request
     void disconnectFromHost();
