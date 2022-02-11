@@ -154,7 +154,9 @@ void HttpConnectionHandler::onResponseResultSignal(ResponseResult responseResult
 	if (responseResult.sender == this) {
 		if (responseResult.finalizer)
 			responseResult.finalizer();
-		finalizeResponse(responseResult.response, responseResult.closeSocketAfterResponse);
+
+        if (WriteToSocket::YES == responseResult.isWriteToSocket)
+            finalizeResponse(responseResult.response, responseResult.closeSocketAfterResponse);
 	}
 }
 
@@ -278,14 +280,16 @@ void HttpConnectionHandler::read()
                     std::lock_guard lock{ m_cancellerMutex };
                     m_canceller = ref;
                 };
-                requestHandler->callService({ this, std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection, onInitCanceller});
+                requestHandler->callService({ this, std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection ? CloseSocket::YES : CloseSocket::NO, onInitCanceller});
             }
         }
     }
 }
 
-void HttpConnectionHandler::finalizeResponse(std::shared_ptr<HttpResponse> response, bool closeConnection)
+void HttpConnectionHandler::finalizeResponse(std::shared_ptr<HttpResponse> response, CloseSocket isCloseConnection)
 {
+    bool closeConnection = CloseSocket::YES == isCloseConnection;
+
     // Finalize sending the response if not already done
     if (!response->hasSentLastPart())
         response->write(QByteArray(), true);
