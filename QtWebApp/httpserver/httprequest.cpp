@@ -44,39 +44,40 @@ HttpRequest::HttpRequest(const HttpRequest& other)
 
 void HttpRequest::readRequest(QTcpSocket* socket)
 {
-    #ifdef SUPERVERBOSE
+    try {
+#ifdef SUPERVERBOSE
         qDebug("HttpRequest: read request");
-    #endif
-    int toRead=maxSize-currentSize+1; // allow one byte more to be able to detect overflow
-    QByteArray dataRead = socket->readLine(toRead);
-    currentSize += dataRead.size();
-    lineBuffer.append(dataRead);
-    if (!lineBuffer.contains("\r\n"))
-    {
-        #ifdef SUPERVERBOSE
+#endif
+        int toRead = maxSize - currentSize + 1; // allow one byte more to be able to detect overflow
+        QByteArray dataRead = socket->readLine(toRead);
+        currentSize += dataRead.size();
+        lineBuffer.append(dataRead);
+        if (!lineBuffer.contains("\r\n")) {
+#ifdef SUPERVERBOSE
             qDebug("HttpRequest: collecting more parts until line break");
-        #endif
-        return;
-    }
-    QByteArray newData=lineBuffer.trimmed();
-    lineBuffer.clear();
-    if (!newData.isEmpty())
-    {
-        qDebug("HttpRequest: from %s: %s",qPrintable(socket->peerAddress().toString()),newData.data());
-        QList<QByteArray> list=newData.split(' ');
-        if (list.count()!=3 || !list.at(2).contains("HTTP"))
-        {
-            qWarning("HttpRequest: received broken HTTP request, invalid first line");
-            status=abort;
+#endif
+            return;
         }
-        else
-        {
-            method=list.at(0).trimmed();
-            path=list.at(1);
-            version=list.at(2);
-            peerAddress = socket->peerAddress();
-            status=waitForHeader;
+        QByteArray newData = lineBuffer.trimmed();
+        lineBuffer.clear();
+        if (!newData.isEmpty()) {
+            qDebug("HttpRequest: from %s: %s", qPrintable(socket->peerAddress().toString()), newData.data());
+            QList<QByteArray> list = newData.split(' ');
+            if (list.count() != 3 || !list.at(2).contains("HTTP")) {
+                qWarning("HttpRequest: received broken HTTP request, invalid first line");
+                status = abort;
+            } else {
+                method = list.at(0).trimmed();
+                path = list.at(1);
+                version = list.at(2);
+                peerAddress = socket->peerAddress();
+                status = waitForHeader;
+            }
         }
+    } catch (const std::exception &ex) {
+        qDebug() << "HttpRequest: readRequest error." << QString::fromStdString(ex.what());
+    } catch (...) {
+        qDebug() << "HttpRequest: readRequest failure.";
     }
 }
 
