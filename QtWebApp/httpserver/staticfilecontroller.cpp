@@ -7,8 +7,6 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QDateTime>
-#include <mutex>
-#include "httpconnectionhandler.h"
 
 using namespace stefanfrings;
 
@@ -39,35 +37,26 @@ StaticFileController::StaticFileController(const QSettings *settings, QObject* p
 }
 
 
-void StaticFileController::service(ServiceParams params)
+void StaticFileController::service(const HttpRequest& request, HttpResponse& response)
 {
-    const auto& request = *params.request;
-    auto& response = *params.response;
-
-    auto response_write = [&response](const QByteArray& data, bool lastPart = false) {
-        response.getConnectionHandler().socketSafeExecution([&] { response.write(data, lastPart); });
-    };
-
     QByteArray path=request.getPath();
     // Check if we have the file in cache
-    const qint64 now=QDateTime::currentMSecsSinceEpoch();
-
-    std::unique_lock lock{ mutex };
-
+    qint64 now=QDateTime::currentMSecsSinceEpoch();
+    mutex.lock();
     CacheEntry* entry=cache.object(path);
-    if (entry && (cacheTimeout == 0 || entry->created > now-cacheTimeout))
+    if (entry && (cacheTimeout==0 || entry->created>now-cacheTimeout))
     {
         QByteArray document=entry->document; //copy the cached document, because other threads may destroy the cached entry immediately after mutex unlock.
         QByteArray filename=entry->filename;
-        lock.unlock();
+        mutex.unlock();
         qDebug("StaticFileController: Cache hit for %s",path.constData());
         setContentType(filename,response);
         response.setHeader("Cache-Control","max-age="+QByteArray::number(maxAge/1000));
-        response_write(document);
+        response.write(document);
     }
     else
     {
-        lock.unlock();
+        mutex.unlock();
         // The file is not in cache.
         qDebug("StaticFileController: Cache miss for %s",path.constData());
         // Forbid access to files outside the docroot directory
@@ -76,7 +65,7 @@ void StaticFileController::service(ServiceParams params)
         {
             qWarning("StaticFileController: detected forbidden characters in path %s",path.constData());
             response.setStatus(403,"forbidden");
-            response_write("403 forbidden",true);
+            response.write("403 forbidden",true);
             return;
         }
         // If the filename is a directory, append index.html.
@@ -86,32 +75,34 @@ void StaticFileController::service(ServiceParams params)
         }
         // Try to open the file
         QFile file(docroot+path);
-        qDebug("StaticFileController: Open file %s", qPrintable(file.fileName()));
+        qDebug("StaticFileController: Open file %s",qPrintable(file.fileName()));
         if (file.open(QIODevice::ReadOnly))
         {
-            setContentType(path, response);
-            response.setHeader("Cache-Control","max-age=" + QByteArray::number(maxAge/1000));
-
-            CacheEntry* entryNew = (file.size() <= maxCachedFileSize) 
-                ? new CacheEntry()
-                : nullptr;
-
-            // Return the file content and store it (if not very big) also into the cache
-            while (!file.atEnd() && !file.error())
+            setContentType(path,response);
+            response.setHeader("Cache-Control","max-age="+QByteArray::number(maxAge/1000));
+            if (file.size()<=maxCachedFileSize)
             {
-                QByteArray buffer = file.read(65536);
-                response_write(buffer);
-                if (entryNew)
-                    entryNew->document.append(buffer);
+                // Return the file content and store it also in the cache
+                entry=new CacheEntry();
+                while (!file.atEnd() && !file.error())
+                {
+                    QByteArray buffer=file.read(65536);
+                    response.write(buffer);
+                    entry->document.append(buffer);
+                }
+                entry->created=now;
+                entry->filename=path;
+                mutex.lock();
+                cache.insert(request.getPath(),entry,entry->document.size());
+                mutex.unlock();
             }
-            if (entryNew)
+            else
             {
-                entryNew->created=now;
-                entryNew->filename=path;
-
-                lock.lock();
-                cache.insert(request.getPath(), entryNew, entryNew->document.size());
-                lock.unlock();
+                // Return the file content, do not store in cache
+                while (!file.atEnd() && !file.error())
+                {
+                    response.write(file.read(65536));
+                }
             }
             file.close();
         }
@@ -120,12 +111,12 @@ void StaticFileController::service(ServiceParams params)
             {
                 qWarning("StaticFileController: Cannot open existing file %s for reading",qPrintable(file.fileName()));
                 response.setStatus(403,"forbidden");
-                response_write("403 forbidden",true);
+                response.write("403 forbidden",true);
             }
             else
             {
                 response.setStatus(404,"not found");
-                response_write("404 not found",true);
+                response.write("404 not found",true);
             }
         }
     }

@@ -37,8 +37,7 @@ HttpConnectionHandlerPool::~HttpConnectionHandlerPool()
 HttpConnectionHandler* HttpConnectionHandlerPool::getConnectionHandler()
 {
     HttpConnectionHandler* freeHandler=0;
-    std::lock_guard lock {mutex};
-
+    mutex.lock();
     // find a free handler in pool
     foreach(HttpConnectionHandler* handler, pool)
     {
@@ -64,7 +63,7 @@ HttpConnectionHandler* HttpConnectionHandlerPool::getConnectionHandler()
           qWarning("Pool is full: pool - %d, maxConnections - %d", pool.count(), maxConnectionHandlers);
         }
     }
-
+    mutex.unlock();
     return freeHandler;
 }
 
@@ -73,8 +72,7 @@ void HttpConnectionHandlerPool::cleanup()
 {
     int maxIdleHandlers=settings->value("minThreads",1).toInt();
     int idleCounter=0;
-
-    std::lock_guard lock{ mutex };
+    mutex.lock();
     foreach(HttpConnectionHandler* handler, pool)
     {
         if (!handler->isBusy())
@@ -88,6 +86,7 @@ void HttpConnectionHandlerPool::cleanup()
             }
         }
     }
+    mutex.unlock();
 }
 
 

@@ -6,7 +6,6 @@
 #include "httpsessionstore.h"
 #include <QDateTime>
 #include <QUuid>
-#include <mutex>
 
 using namespace stefanfrings;
 
@@ -29,8 +28,7 @@ HttpSessionStore::~HttpSessionStore()
 QByteArray HttpSessionStore::getSessionId(const HttpRequest& request, HttpResponse& response)
 {
     // The session ID in the response has priority because this one will be used in the next request.
-    std::lock_guard{mutex};
-
+    mutex.lock();
     // Get the session ID from the response cookie
     QByteArray sessionId=response.getCookies().value(cookieName).getValue();
     if (sessionId.isEmpty())
@@ -47,15 +45,14 @@ QByteArray HttpSessionStore::getSessionId(const HttpRequest& request, HttpRespon
             sessionId.clear();
         }
     }
-
+    mutex.unlock();
     return sessionId;
 }
 
 HttpSession HttpSessionStore::getSession(const HttpRequest& request, HttpResponse& response, bool allowCreate)
 {
     QByteArray sessionId=getSessionId(request,response);
-    std::lock_guard{ mutex };
-
+    mutex.lock();
     if (!sessionId.isEmpty())
     {
         HttpSession session=sessions.value(sessionId);
@@ -86,26 +83,23 @@ HttpSession HttpSessionStore::getSession(const HttpRequest& request, HttpRespons
         mutex.unlock();
         return session;
     }
-
     // Return a null session
+    mutex.unlock();
     return HttpSession();
 }
 
 HttpSession HttpSessionStore::getSession(const QByteArray& id)
 {
-    HttpSession session;
-    {
-        std::lock_guard{ mutex };
-        session = sessions.value(id);
-    }
+    mutex.lock();
+    HttpSession session=sessions.value(id);
+    mutex.unlock();
     session.setLastAccess();
     return session;
 }
 
 void HttpSessionStore::sessionTimerEvent()
 {
-    std::lock_guard{ mutex };
-
+    mutex.lock();
     qint64 now=QDateTime::currentMSecsSinceEpoch();
     QMap<QByteArray,HttpSession>::iterator i = sessions.begin();
     while (i != sessions.end())
@@ -120,12 +114,14 @@ void HttpSessionStore::sessionTimerEvent()
             sessions.erase(prev);
         }
     }
+    mutex.unlock();
 }
 
 
 /** Delete a session */
 void HttpSessionStore::removeSession(HttpSession session)
 {
-    std::lock_guard{ mutex };
+    mutex.lock();
     sessions.remove(session.getId());
+    mutex.unlock();
 }

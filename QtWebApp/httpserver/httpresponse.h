@@ -19,7 +19,7 @@ public:
 };
 
 namespace stefanfrings {
-    class HttpConnectionHandler;
+
 /**
   This object represents a HTTP response, used to return something to the web client.
   <p>
@@ -47,7 +47,7 @@ public:
       Constructor.
       @param socket used to write the response
     */
-    HttpResponse(QTcpSocket *socket, stefanfrings::HttpConnectionHandler& connectionHandler);
+    HttpResponse(QTcpSocket *socket);
 
     /**
       Set a HTTP response header.
@@ -109,7 +109,7 @@ public:
     void setCookie(const HttpCookie& cookie);
 
     QTcpSocket *getSocket() const { return socket; }
-    HttpConnectionHandler& getConnectionHandler() { return connectionHandler; }
+
     /**
       Send a redirect response to the browser.
       Cannot be combined with write().
@@ -135,7 +135,6 @@ protected:
     QTcpSocket* socket;
 
 private:
-    HttpConnectionHandler& connectionHandler;
 
     /** Request headers */
     QMap<QByteArray,QByteArray> headers;

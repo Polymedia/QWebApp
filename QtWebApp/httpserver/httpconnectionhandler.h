@@ -17,7 +17,6 @@
 #include "httpheadershandler.h"
 #include "httprequest.h"
 #include "httprequesthandler.h"
-#include <mutex>
 
 namespace stefanfrings {
 
@@ -72,18 +71,11 @@ public:
     /** Mark this handler as busy */
     void setBusy();
 
-    using QueuedFunction = std::function<void()>;
-    void socketSafeExecution(QueuedFunction function);
-
 public slots:
     /**  Set handlers for headers checking **/
     void setHeadersHandler(const HeadersHandler& headersHandler);
 
 private:
-    void finalizeResponse(std::shared_ptr<HttpResponse> response, CloseSocket closeConnection);
-    void onQueueFunctionSignal();
-    void startTimer(); // Start timer for next request
-    void disconnectFromHost();
 
     /** Configuration settings */
     const QSettings* settings;
@@ -98,7 +90,7 @@ private:
     QTimer readTimer;
 
     /** Storage for the current incoming HTTP request */
-    std::shared_ptr<HttpRequest> currentRequest;
+    HttpRequest* currentRequest;
 
     /** Dispatches received requests to services */
     HttpRequestHandler* requestHandler;
@@ -115,15 +107,8 @@ private:
     /**  Handlers for headers checking **/
     HeadersHandler headersHandler;
 
-    std::mutex  m_cancellerMutex;
-    CancellerRef m_canceller;
-
-    QueuedFunction m_queuedFunction;
-
 signals:
     void newHeadersHandler(const HeadersHandler& headersHandler);
-    void responseResultSocketSignal(ResponseResult);
-    void queueFunctionSignal();
 
 public slots:
 
@@ -133,10 +118,7 @@ public slots:
     */
     void handleConnection(const tSocketDescriptor& socketDescriptor);
 
-    void resetCurrentRequest();
-
 private slots:
-    void onResponseResultSignal(ResponseResult);
 
     /** Received from the socket when a read-timeout occured */
     void readTimeout();
