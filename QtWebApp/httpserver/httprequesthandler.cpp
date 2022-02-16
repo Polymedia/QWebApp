@@ -29,7 +29,7 @@ void HttpRequestHandler::service(ServiceParams params)
 
 void HttpRequestHandler::callService(ServiceParams params)
 {
-    std::thread([this, params] {
+    QtConcurrent::run([this, params] {
         try {
             service(params);
         }
@@ -41,7 +41,7 @@ void HttpRequestHandler::callService(ServiceParams params)
             qCritical("HttpConnectionHandler (%p): An uncatched exception occured in the request handler",
                 static_cast<void*>(this));
         }
-    }).detach();
+    });
 }
 
 
