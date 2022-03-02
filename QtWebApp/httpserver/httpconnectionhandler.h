@@ -73,7 +73,7 @@ public:
 
 public slots:
     /**  Set handlers for headers checking **/
-    void setHeadersHandler(const HeadersHandler& headersHandler);
+    void setHeadersHandler(HeadersHandler headersHandler);
 
 private:
 
@@ -108,7 +108,7 @@ private:
     HeadersHandler headersHandler;
 
 signals:
-    void newHeadersHandler(const HeadersHandler& headersHandler);
+    void newHeadersHandler(HeadersHandler headersHandler);
 
 public slots:
 

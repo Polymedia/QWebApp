@@ -123,11 +123,11 @@ void HttpConnectionHandler::setBusy()
     this->busy = true;
 }
 
-void stefanfrings::HttpConnectionHandler::setHeadersHandler(const HeadersHandler& headersHandler)
+void stefanfrings::HttpConnectionHandler::setHeadersHandler(HeadersHandler headersHandler)
 {
     this->headersHandler = headersHandler;
 
-    emit newHeadersHandler(headersHandler);
+    emit newHeadersHandler(std::move(headersHandler));
 }
 
 void HttpConnectionHandler::readTimeout()
