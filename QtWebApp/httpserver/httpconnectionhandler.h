@@ -77,7 +77,7 @@ public:
 
 public slots:
     /**  Set handlers for headers checking **/
-    void setHeadersHandler(const HeadersHandler& headersHandler);
+    void setHeadersHandler(HeadersHandler headersHandler);
 
 private:
     void finalizeResponse(std::shared_ptr<HttpResponse> response, bool closeConnection);
@@ -121,7 +121,7 @@ private:
     QueuedFunction m_queuedFunction;
 
 signals:
-    void newHeadersHandler(const HeadersHandler& headersHandler);
+    void newHeadersHandler(HeadersHandler headersHandler);
     void responseResultSocketSignal(ResponseResult);
     void queueFunctionSignal();
 

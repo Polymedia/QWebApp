@@ -38,8 +38,10 @@ HttpRequest::HttpRequest(const HttpRequest& other)
     expectedBodySize = other.expectedBodySize;
     currentHeader = other.currentHeader;
     lineBuffer = other.lineBuffer;
-    headersHandler = other.headersHandler;
     httpError = other.httpError;
+
+    std::lock_guard lock{ other.headersHandlerMutex };
+    headersHandler = other.headersHandler;
 }
 
 void HttpRequest::readRequest(QTcpSocket* socket)
@@ -322,7 +324,12 @@ void HttpRequest::readFromSocket(QTcpSocket* socket)
         readHeader(socket);
 
         if (status != waitForHeader) {
-            auto &[handlers, errorHandler] = headersHandler;
+            HeadersHandler handlersCopy;
+            {
+                std::lock_guard lock{ headersHandlerMutex };
+                handlersCopy = headersHandler;
+            }
+            auto &[handlers, errorHandler] = handlersCopy;
 
             for (const auto &handler : handlers) {
                 const auto [isOk, previousCheckingInfo, httpError] = handler({method, path, parameters, headers});
@@ -621,7 +628,8 @@ const HttpError& stefanfrings::HttpRequest::getHttpError() const
     return httpError;
 }
 
-void stefanfrings::HttpRequest::setHeadersHandler(const HeadersHandler& headersHandler)
+void stefanfrings::HttpRequest::setHeadersHandler(HeadersHandler headersHandler)
 {
-    this->headersHandler = headersHandler;
+    std::lock_guard lock{ headersHandlerMutex };
+    this->headersHandler = std::move(headersHandler);
 }
