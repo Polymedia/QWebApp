@@ -281,6 +281,7 @@ void HttpConnectionHandler::read()
                     m_canceller = ref;
                 };
                 requestHandler->callService({ this, currentRequest, response, closeConnection, onInitCanceller });
+                resetCurrentRequest();
             }
         }
     }
@@ -317,6 +318,4 @@ void HttpConnectionHandler::finalizeResponse(std::shared_ptr<HttpResponse> respo
     {
         startTimer();
     }
-    
-    resetCurrentRequest();
 }
