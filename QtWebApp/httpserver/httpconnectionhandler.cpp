@@ -280,7 +280,7 @@ void HttpConnectionHandler::read()
                     std::lock_guard lock{ m_cancellerMutex };
                     m_canceller = ref;
                 };
-                requestHandler->callService({ this, currentRequest, response, closeConnection, onInitCanceller });
+                requestHandler->callService({ this, std::make_shared<HttpRequest>(*currentRequest), response, closeConnection, onInitCanceller });
             }
         }
     }
