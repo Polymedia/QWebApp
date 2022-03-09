@@ -113,6 +113,7 @@ private:
     void createSocket();
 
     /**  Handlers for headers checking **/
+    std::mutex headersHandlerMutex;
     HeadersHandler headersHandler;
 
     std::mutex  m_cancellerMutex;

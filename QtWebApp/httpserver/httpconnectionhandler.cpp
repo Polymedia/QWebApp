@@ -126,6 +126,7 @@ void HttpConnectionHandler::setBusy()
 
 void stefanfrings::HttpConnectionHandler::setHeadersHandler(HeadersHandler headersHandler)
 {
+    std::lock_guard lock{ headersHandlerMutex };
     this->headersHandler = headersHandler;
 
     emit newHeadersHandler(std::move(headersHandler));
@@ -216,8 +217,10 @@ void HttpConnectionHandler::read()
         #endif
 
         // Create new HttpRequest object if necessary
-        if (!currentRequest)
-            currentRequest=std::make_shared<HttpRequest>(settings, headersHandler);
+        if (!currentRequest) {
+            std::lock_guard lock{ headersHandlerMutex };
+            currentRequest = std::make_shared<HttpRequest>(settings, headersHandler);
+        }
 
         // Collect data for the request object
         while (socket->bytesAvailable() &&
