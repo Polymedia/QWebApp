@@ -7,7 +7,6 @@
 #define HTTPREQUEST_H
 
 #include <memory>
-#include <mutex>
 
 #include <QByteArray>
 #include <QHostAddress>
@@ -158,9 +157,6 @@ public:
     */
     const HttpError& getHttpError() const;
 
-public slots:
-    void setHeadersHandler(HeadersHandler headersHandler);
-
 private:
 
     /** Request headers */
@@ -239,7 +235,6 @@ private:
     QByteArray lineBuffer;
 
     /** Handlers for headers checking */
-    mutable std::mutex headersHandlerMutex;
     HeadersHandler headersHandler;
 
     /** Http error of failed headers checking */

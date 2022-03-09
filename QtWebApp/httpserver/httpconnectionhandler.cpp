@@ -217,10 +217,7 @@ void HttpConnectionHandler::read()
 
         // Create new HttpRequest object if necessary
         if (!currentRequest)
-        {
             currentRequest=std::make_shared<HttpRequest>(settings, headersHandler);
-            connect(this, &HttpConnectionHandler::newHeadersHandler, currentRequest.get(), &HttpRequest::setHeadersHandler);
-        }
 
         // Collect data for the request object
         while (socket->bytesAvailable() &&
@@ -280,7 +277,7 @@ void HttpConnectionHandler::read()
                     std::lock_guard lock{ m_cancellerMutex };
                     m_canceller = ref;
                 };
-                requestHandler->callService({ this, std::make_shared<HttpRequest>(*currentRequest), response, closeConnection, onInitCanceller });
+                requestHandler->callService({ this, std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection, onInitCanceller});
             }
         }
     }
