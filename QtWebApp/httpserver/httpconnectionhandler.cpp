@@ -126,9 +126,8 @@ void HttpConnectionHandler::setBusy()
 
 void stefanfrings::HttpConnectionHandler::setHeadersHandler(HeadersHandler headersHandler)
 {
+    std::lock_guard lock{ headersHandlerMutex };
     this->headersHandler = headersHandler;
-
-    emit newHeadersHandler(std::move(headersHandler));
 }
 
 void HttpConnectionHandler::disconnectFromHost()
@@ -216,10 +215,9 @@ void HttpConnectionHandler::read()
         #endif
 
         // Create new HttpRequest object if necessary
-        if (!currentRequest)
-        {
-            currentRequest=std::make_shared<HttpRequest>(settings, headersHandler);
-            connect(this, &HttpConnectionHandler::newHeadersHandler, currentRequest.get(), &HttpRequest::setHeadersHandler);
+        if (!currentRequest) {
+            std::lock_guard lock{ headersHandlerMutex };
+            currentRequest = std::make_shared<HttpRequest>(settings, headersHandler);
         }
 
         // Collect data for the request object
@@ -280,7 +278,7 @@ void HttpConnectionHandler::read()
                     std::lock_guard lock{ m_cancellerMutex };
                     m_canceller = ref;
                 };
-                requestHandler->callService({ this, currentRequest, response, closeConnection, onInitCanceller });
+                requestHandler->callService({ this, std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection, onInitCanceller});
             }
         }
     }
