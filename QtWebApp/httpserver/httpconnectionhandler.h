@@ -122,7 +122,6 @@ private:
     QueuedFunction m_queuedFunction;
 
 signals:
-    void newHeadersHandler(HeadersHandler headersHandler);
     void responseResultSocketSignal(ResponseResult);
     void queueFunctionSignal();
 

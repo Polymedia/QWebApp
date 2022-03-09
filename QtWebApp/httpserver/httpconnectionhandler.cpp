@@ -128,8 +128,6 @@ void stefanfrings::HttpConnectionHandler::setHeadersHandler(HeadersHandler heade
 {
     std::lock_guard lock{ headersHandlerMutex };
     this->headersHandler = headersHandler;
-
-    emit newHeadersHandler(std::move(headersHandler));
 }
 
 void HttpConnectionHandler::disconnectFromHost()
