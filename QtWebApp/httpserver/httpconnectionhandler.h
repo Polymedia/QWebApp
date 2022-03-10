@@ -104,7 +104,7 @@ private:
     HttpRequestHandler* requestHandler;
 
     /** This shows the busy-state from a very early time */
-    bool busy;
+    std::atomic_bool busy;
 
     /** Configuration for SSL */
     const QSslConfiguration* sslConfiguration;
@@ -113,6 +113,7 @@ private:
     void createSocket();
 
     /**  Handlers for headers checking **/
+    std::mutex headersHandlerMutex;
     HeadersHandler headersHandler;
 
     std::mutex  m_cancellerMutex;
@@ -121,7 +122,6 @@ private:
     QueuedFunction m_queuedFunction;
 
 signals:
-    void newHeadersHandler(HeadersHandler headersHandler);
     void responseResultSocketSignal(ResponseResult);
     void queueFunctionSignal();
 
