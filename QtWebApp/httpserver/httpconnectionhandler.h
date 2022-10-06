@@ -70,7 +70,7 @@ public:
     bool isBusy() const;
 
     /** Mark this handler as busy */
-    void setBusy();
+    void setBusy(bool isBusy = true);
 
     using QueuedFunction = std::function<void()>;
     void socketSafeExecution(QueuedFunction function);

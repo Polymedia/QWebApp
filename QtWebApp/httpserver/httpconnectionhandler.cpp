@@ -119,9 +119,9 @@ bool HttpConnectionHandler::isBusy() const
     return busy;
 }
 
-void HttpConnectionHandler::setBusy()
+void HttpConnectionHandler::setBusy(bool isBusy /*= true*/)
 {
-    this->busy = true;
+    this->busy = isBusy;
 }
 
 void stefanfrings::HttpConnectionHandler::setHeadersHandler(HeadersHandler headersHandler)
@@ -195,7 +195,7 @@ void HttpConnectionHandler::disconnected()
     qDebug("HttpConnectionHandler (%p): disconnected", static_cast<void*>(this));
     socket->close();
     readTimer.stop();
-    busy = false;
+    setBusy(false);
 
     CancellerRef canceller;
     {
