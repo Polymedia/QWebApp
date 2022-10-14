@@ -151,7 +151,8 @@ void stefanfrings::HttpConnectionHandler::resetCurrentRequest()
 
 void HttpConnectionHandler::onResponseResultSignal(ResponseResult responseResult)
 {
-	if (responseResult.sender == currentRequest.get()) {
+	if (responseResult.requestID == currentRequestID)
+    {
 		if (responseResult.finalizer)
 			responseResult.finalizer();
 
@@ -206,6 +207,8 @@ void HttpConnectionHandler::disconnected()
     if (canceller)
         canceller->cancel();
 }
+
+static std::atomic<uint64_t> reguestID = 0;
 
 void HttpConnectionHandler::read()
 {
@@ -280,7 +283,8 @@ void HttpConnectionHandler::read()
                     std::lock_guard lock{ m_cancellerMutex };
                     m_canceller = ref;
                 };
-                requestHandler->callService(ServiceParams{ currentRequest.get(), std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection ? CloseSocket::YES : CloseSocket::NO, onInitCanceller});
+                currentRequestID = reguestID++;
+                requestHandler->callService(ServiceParams{ currentRequestID, std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection ? CloseSocket::YES : CloseSocket::NO, onInitCanceller});
             }
         }
     }

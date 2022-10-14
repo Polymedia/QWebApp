@@ -99,6 +99,7 @@ private:
 
     /** Storage for the current incoming HTTP request */
     std::shared_ptr<HttpRequest> currentRequest;
+    uint64_t currentRequestID;
 
     /** Dispatches received requests to services */
     HttpRequestHandler* requestHandler;

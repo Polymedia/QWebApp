@@ -38,7 +38,7 @@ enum class CloseSocket : int {
 };
 
 struct ServiceParams {
-    const QObject* sender;
+    uint64_t requestID;
     std::shared_ptr<const stefanfrings::HttpRequest> request;
     std::shared_ptr<HttpResponse> response;
     CloseSocket closeSocketAfterResponse;
@@ -52,7 +52,7 @@ enum class WriteToSocket : int {
 
 using FinalizeFunctor = std::function<void()>;
 struct ResponseResult {
-    const QObject* sender;
+    uint64_t requestID;
     std::shared_ptr<HttpResponse> response;
     FinalizeFunctor finalizer;
     CloseSocket closeSocketAfterResponse;
