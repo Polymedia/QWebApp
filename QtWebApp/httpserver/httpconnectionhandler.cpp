@@ -210,7 +210,6 @@ void HttpConnectionHandler::disconnected()
         canceller->cancel();
 }
 
-static std::atomic<uint64_t> reguestID = 0;
 static std::atomic<uint64_t> reguestID = 1;
 
 void HttpConnectionHandler::read()
