@@ -84,6 +84,7 @@ void HttpConnectionHandler::handleConnection(const tSocketDescriptor& socketDesc
 {
     qDebug("HttpConnectionHandler (%p): handle new connection", static_cast<void*>(this));
     setBusy();
+    currentRequestID = 0;
     Q_ASSERT(socket->isOpen()==false); // if not, then the handler is already busy
 
     //UGLY workaround - we need to clear writebuffer before reusing this socket
@@ -194,6 +195,7 @@ void HttpConnectionHandler::readTimeout()
 void HttpConnectionHandler::disconnected()
 {
     qDebug("HttpConnectionHandler (%p): disconnected", static_cast<void*>(this));
+    currentRequestID = 0;
     socket->close();
     readTimer.stop();
     setBusy(false);
@@ -209,6 +211,7 @@ void HttpConnectionHandler::disconnected()
 }
 
 static std::atomic<uint64_t> reguestID = 0;
+static std::atomic<uint64_t> reguestID = 1;
 
 void HttpConnectionHandler::read()
 {
