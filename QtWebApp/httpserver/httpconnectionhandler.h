@@ -70,7 +70,7 @@ public:
     bool isBusy() const;
 
     /** Mark this handler as busy */
-    void setBusy();
+    void setBusy(bool isBusy = true);
 
     using QueuedFunction = std::function<void()>;
     void socketSafeExecution(QueuedFunction function);
@@ -99,6 +99,7 @@ private:
 
     /** Storage for the current incoming HTTP request */
     std::shared_ptr<HttpRequest> currentRequest;
+    uint64_t currentRequestID;
 
     /** Dispatches received requests to services */
     HttpRequestHandler* requestHandler;

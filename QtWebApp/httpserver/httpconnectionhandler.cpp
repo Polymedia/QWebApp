@@ -84,6 +84,7 @@ void HttpConnectionHandler::handleConnection(const tSocketDescriptor& socketDesc
 {
     qDebug("HttpConnectionHandler (%p): handle new connection", static_cast<void*>(this));
     setBusy();
+    currentRequestID = 0;
     Q_ASSERT(socket->isOpen()==false); // if not, then the handler is already busy
 
     //UGLY workaround - we need to clear writebuffer before reusing this socket
@@ -119,9 +120,9 @@ bool HttpConnectionHandler::isBusy() const
     return busy;
 }
 
-void HttpConnectionHandler::setBusy()
+void HttpConnectionHandler::setBusy(bool isBusy /*= true*/)
 {
-    this->busy = true;
+    this->busy = isBusy;
 }
 
 void stefanfrings::HttpConnectionHandler::setHeadersHandler(HeadersHandler headersHandler)
@@ -151,7 +152,8 @@ void stefanfrings::HttpConnectionHandler::resetCurrentRequest()
 
 void HttpConnectionHandler::onResponseResultSignal(ResponseResult responseResult)
 {
-	if (responseResult.sender == this) {
+	if (responseResult.requestID == currentRequestID)
+    {
 		if (responseResult.finalizer)
 			responseResult.finalizer();
 
@@ -193,9 +195,10 @@ void HttpConnectionHandler::readTimeout()
 void HttpConnectionHandler::disconnected()
 {
     qDebug("HttpConnectionHandler (%p): disconnected", static_cast<void*>(this));
+    currentRequestID = 0;
     socket->close();
     readTimer.stop();
-    busy = false;
+    setBusy(false);
 
     CancellerRef canceller;
     {
@@ -206,6 +209,8 @@ void HttpConnectionHandler::disconnected()
     if (canceller)
         canceller->cancel();
 }
+
+static std::atomic<uint64_t> reguestID = 1;
 
 void HttpConnectionHandler::read()
 {
@@ -280,7 +285,8 @@ void HttpConnectionHandler::read()
                     std::lock_guard lock{ m_cancellerMutex };
                     m_canceller = ref;
                 };
-                requestHandler->callService({ this, std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection ? CloseSocket::YES : CloseSocket::NO, onInitCanceller});
+                currentRequestID = reguestID++;
+                requestHandler->callService(ServiceParams{ currentRequestID, std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection ? CloseSocket::YES : CloseSocket::NO, onInitCanceller});
             }
         }
     }
