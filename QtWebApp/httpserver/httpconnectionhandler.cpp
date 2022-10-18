@@ -180,19 +180,19 @@ void HttpConnectionHandler::socketSafeExecution(QueuedFunction function)
     std::promise<void> promise;
     auto future = promise.get_future();
 
-    m_queuedFunction = [function, &promise] {
+    auto queuedFunction = [function, &promise] {
         function();
         promise.set_value();
     };
 
-    emit queueFunctionSignal();
+    emit queueFunctionSignal(queuedFunction);
 
     future.get();
 }
 
-void HttpConnectionHandler::onQueueFunctionSignal()
+void HttpConnectionHandler::onQueueFunctionSignal(QueuedFunction function)
 {
-    m_queuedFunction();
+    function();
 }
 
 void HttpConnectionHandler::readTimeout()

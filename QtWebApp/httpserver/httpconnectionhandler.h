@@ -81,7 +81,7 @@ public slots:
 
 private:
     void finalizeResponse(std::shared_ptr<HttpResponse> response, CloseSocket closeConnection);
-    void onQueueFunctionSignal();
+    void onQueueFunctionSignal(QueuedFunction);
     void startTimer(); // Start timer for next request
     void disconnectFromHost();
 
@@ -120,11 +120,9 @@ private:
     std::mutex  m_cancellerMutex;
     CancellerRef m_canceller;
 
-    QueuedFunction m_queuedFunction;
-
 signals:
     void responseResultSocketSignal(ResponseResult);
-    void queueFunctionSignal();
+    void queueFunctionSignal(QueuedFunction);
 
 public slots:
 
