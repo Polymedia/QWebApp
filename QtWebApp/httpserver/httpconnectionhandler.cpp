@@ -159,20 +159,21 @@ void HttpConnectionHandler::onResponseResultSignal(ResponseResult responseResult
             socket->disconnectFromHost();
     };
 
-	if (responseResult.requestID == currentRequestID)
+    if (responseResult.requestID == currentRequestID) {
         try {
-		    if (responseResult.finalizer)
-			    responseResult.finalizer();
+            if (responseResult.finalizer)
+                responseResult.finalizer();
 
             if (WriteToSocket::YES == responseResult.isWriteToSocket)
                 finalizeResponse(responseResult.response, responseResult.closeSocketAfterResponse);
-	    }
+        }
         catch (const std::exception& e) {
             onException(e.what());
         }
         catch (...) {
             onException("Unknown");
         }
+    }
 }
 
 void HttpConnectionHandler::socketSafeExecution(QueuedFunction function)
