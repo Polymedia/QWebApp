@@ -147,19 +147,33 @@ void HttpConnectionHandler::startTimer()
 
 void stefanfrings::HttpConnectionHandler::resetCurrentRequest()
 {
+    currentRequestID = 0;
     currentRequest.reset();
 }
 
 void HttpConnectionHandler::onResponseResultSignal(ResponseResult responseResult)
 {
-	if (responseResult.requestID == currentRequestID)
-    {
-		if (responseResult.finalizer)
-			responseResult.finalizer();
+    auto onException = [this](const char* message) {
+        qWarning() << "Exception:" << message;
+        if (socket)
+            socket->disconnectFromHost();
+    };
 
-        if (WriteToSocket::YES == responseResult.isWriteToSocket)
-            finalizeResponse(responseResult.response, responseResult.closeSocketAfterResponse);
-	}
+    if (responseResult.requestID == currentRequestID) {
+        try {
+            if (responseResult.finalizer)
+                responseResult.finalizer();
+
+            if (WriteToSocket::YES == responseResult.isWriteToSocket)
+                finalizeResponse(responseResult.response, responseResult.closeSocketAfterResponse);
+        }
+        catch (const std::exception& e) {
+            onException(e.what());
+        }
+        catch (...) {
+            onException("Unknown");
+        }
+    }
 }
 
 void HttpConnectionHandler::socketSafeExecution(QueuedFunction function)
@@ -167,19 +181,19 @@ void HttpConnectionHandler::socketSafeExecution(QueuedFunction function)
     std::promise<void> promise;
     auto future = promise.get_future();
 
-    m_queuedFunction = [function, &promise] {
+    auto queuedFunction = [function, &promise] {
         function();
         promise.set_value();
     };
 
-    emit queueFunctionSignal();
+    emit queueFunctionSignal(queuedFunction);
 
     future.get();
 }
 
-void HttpConnectionHandler::onQueueFunctionSignal()
+void HttpConnectionHandler::onQueueFunctionSignal(QueuedFunction function)
 {
-    m_queuedFunction();
+    function();
 }
 
 void HttpConnectionHandler::readTimeout()
