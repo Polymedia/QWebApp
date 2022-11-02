@@ -32,6 +32,7 @@ namespace stefanfrings {
 #ifdef QT_NO_SSL
   #define QSslConfiguration QObject
 #endif
+    using QueuedFunction = std::function<void()>;
 
 /**
   The connection handler accepts incoming connections and dispatches incoming requests to to a
@@ -48,6 +49,7 @@ namespace stefanfrings {
   The readTimeout value defines the maximum time to wait for a complete HTTP request.
   @see HttpRequest for description of config settings maxRequestSize and maxMultiPartSize.
 */
+
 class DECLSPEC HttpConnectionHandler : public QObject {
     Q_OBJECT
     Q_DISABLE_COPY(HttpConnectionHandler)
@@ -72,7 +74,6 @@ public:
     /** Mark this handler as busy */
     void setBusy(bool isBusy = true);
 
-    using QueuedFunction = std::function<void()>;
     void socketSafeExecution(QueuedFunction function);
 
 public slots:
@@ -151,5 +152,7 @@ private slots:
 };
 
 } // end of namespace
+
+Q_DECLARE_METATYPE(stefanfrings::QueuedFunction)
 
 #endif // HTTPCONNECTIONHANDLER_H
