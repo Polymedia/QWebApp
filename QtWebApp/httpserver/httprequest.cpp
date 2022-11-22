@@ -325,7 +325,12 @@ void HttpRequest::readFromSocket(QTcpSocket* socket)
             auto &[handlers, errorHandler] = headersHandler;
 
             for (const auto &handler : handlers) {
-                const auto [isOk, previousCheckingInfo, httpError] = handler({method, path, parameters, headers});
+                auto newParameters = parameters;
+                auto newHeaders = headers;
+                newParameters.detach();
+                newHeaders.detach();
+
+                const auto [isOk, previousCheckingInfo, httpError] = handler({ {method.constData()}, {path.constData()}, newParameters, newHeaders });
 
                 if (!isOk) {
                     status = wrongHeaders;
