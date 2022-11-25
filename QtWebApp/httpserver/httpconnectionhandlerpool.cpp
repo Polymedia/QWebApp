@@ -4,6 +4,7 @@
     #include <QSslCertificate>
     #include <QSslConfiguration>
 #endif
+#include <malloc.h>
 #include <QDir>
 #include "httpconnectionhandlerpool.h"
 
@@ -88,6 +89,10 @@ void HttpConnectionHandlerPool::cleanup()
             }
         }
     }
+
+#if defined(__linux__)
+    malloc_trim(0);
+#endif
 }
 
 
