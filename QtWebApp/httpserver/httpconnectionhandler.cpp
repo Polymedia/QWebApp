@@ -187,12 +187,7 @@ void HttpConnectionHandler::socketSafeExecution(QueuedFunction function)
             promise.set_value();
         }
         catch (...) {
-            try {
-                promise.set_exception(std::current_exception());
-            } 
-            catch(...){ // set_exception() may throw too
-                // what to do?
-            }
+            promise.set_exception(std::current_exception());
         }
     };
 
