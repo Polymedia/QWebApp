@@ -182,8 +182,18 @@ void HttpConnectionHandler::socketSafeExecution(QueuedFunction function)
     auto future = promise.get_future();
 
     auto queuedFunction = [function, &promise] {
-        function();
-        promise.set_value();
+        try {
+            function();
+            promise.set_value();
+        }
+        catch (...) {
+            try {
+                promise.set_exception(std::current_exception());
+            } 
+            catch(...){ // set_exception() may throw too
+                // what to do?
+            }
+        }
     };
 
     emit queueFunctionSignal(queuedFunction);
