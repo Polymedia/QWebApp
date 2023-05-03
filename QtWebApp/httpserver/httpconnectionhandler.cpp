@@ -233,64 +233,66 @@ static std::atomic<uint64_t> reguestID = 1;
 
 void HttpConnectionHandler::read()
 {
-    // The loop adds support for HTTP pipelinig
-    while (socket->bytesAvailable())
-    {
-        #ifdef SUPERVERBOSE
-        qDebug("HttpConnectionHandler (%p): read input", static_cast<void*>(this));
-        #endif
+    try {
 
-        // Create new HttpRequest object if necessary
-        if (!currentRequest) {
-            std::lock_guard lock{ headersHandlerMutex };
-            currentRequest = std::make_shared<HttpRequest>(settings, headersHandler);
-        }
+        // The loop adds support for HTTP pipelinig
+        while (socket->bytesAvailable())
+        {
+#ifdef SUPERVERBOSE
+            qDebug("HttpConnectionHandler (%p): read input", static_cast<void*>(this));
+#endif
 
-        // Collect data for the request object
-        while (socket->bytesAvailable() &&
+            // Create new HttpRequest object if necessary
+            if (!currentRequest) {
+                std::lock_guard lock{ headersHandlerMutex };
+                currentRequest = std::make_shared<HttpRequest>(settings, headersHandler);
+            }
+
+            // Collect data for the request object
+            while (socket->bytesAvailable() &&
                 currentRequest->getStatus() != HttpRequest::complete &&
                 currentRequest->getStatus() != HttpRequest::abort &&
                 currentRequest->getStatus() != HttpRequest::wrongHeaders)
-        {
-            currentRequest->readFromSocket(socket);
-            if (currentRequest->getStatus()==HttpRequest::waitForBody)
             {
-                // Restart timer for read timeout, otherwise it would
-                // expire during large file uploads.
-                startTimer();
+                currentRequest->readFromSocket(socket);
+                if (currentRequest->getStatus() == HttpRequest::waitForBody)
+                {
+                    // Restart timer for read timeout, otherwise it would
+                    // expire during large file uploads.
+                    startTimer();
+                }
             }
-        }
 
-        switch (currentRequest->getStatus()) {
+            switch (currentRequest->getStatus()) {
             default: break;
 
-            // If some headers fails checking, return status code and error text from handler
+                // If some headers fails checking, return status code and error text from handler
             case HttpRequest::wrongHeaders: {
                 const auto [statusCode, text] = currentRequest->getHttpError();
                 const QString response = QString{ "HTTP/1.1 %1\r\nConnection: "
                                                  "close\r\n\r\n%2\r\n" }
-                                        .arg(statusCode)
-                                        .arg(text);
+                    .arg(statusCode)
+                    .arg(text);
 
                 socket->write(response.toUtf8().constData());
                 disconnectFromHost();
                 return;
             }
 
-            // If the request is aborted, return error message and close the connection
+                                          // If the request is aborted, return error message and close the connection
             case HttpRequest::abort:
                 socket->write("HTTP/1.1 413 entity too large\r\nConnection: close\r\n\r\n413 Entity too large\r\n");
                 disconnectFromHost();
                 return;
 
-            // If the request is complete, let the request mapper dispatch it
+                // If the request is complete, let the request mapper dispatch it
             case HttpRequest::complete: {
                 readTimer.stop();
                 qDebug("HttpConnectionHandler (%p): received request", static_cast<void*>(this));
 
                 // Copy the Connection:close header to the response
                 auto response = std::make_shared<HttpResponse>(socket, *this);
-                bool closeConnection=QString::compare(currentRequest->getHeader("Connection"), "close", Qt::CaseInsensitive) == 0;
+                bool closeConnection = QString::compare(currentRequest->getHeader("Connection"), "close", Qt::CaseInsensitive) == 0;
                 if (!closeConnection)
                     // In case of HTTP 1.0 protocol add the Connection:close header.
                     // This ensures that the HttpResponse does not activate chunked mode, which is not spported by HTTP 1.0.
@@ -305,9 +307,14 @@ void HttpConnectionHandler::read()
                     m_canceller = ref;
                 };
                 currentRequestID = reguestID++;
-                requestHandler->callService(ServiceParams{ currentRequestID, std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection ? CloseSocket::YES : CloseSocket::NO, onInitCanceller});
+                requestHandler->callService(ServiceParams{ currentRequestID, std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection ? CloseSocket::YES : CloseSocket::NO, onInitCanceller });
+            }
             }
         }
+    } 
+    catch (const std::exception& ex) {
+        qCritical() << ex.what();
+        disconnectFromHost();
     }
 }
 
