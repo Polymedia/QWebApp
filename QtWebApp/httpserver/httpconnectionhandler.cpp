@@ -313,6 +313,7 @@ void HttpConnectionHandler::read()
                 };
 
                 try {
+                    throw std::runtime_error("Call servise oops");
                     requestHandler->callService(ServiceParams{ currentRequestID, std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection ? CloseSocket::YES : CloseSocket::NO, onInitCanceller });
                 }
                 catch (const std::exception& e) {
