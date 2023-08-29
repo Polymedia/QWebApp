@@ -309,6 +309,7 @@ void HttpConnectionHandler::read()
                 auto fnSendError = [this](const char * msg) {
                     const auto response = QString("HTTP/1.1 500 error on callService \r\nException: %1").arg(msg);
                     socket->write(response.toUtf8().constData());
+                    disconnectFromHost();
                 };
 
                 try {
