@@ -305,7 +305,23 @@ void HttpConnectionHandler::read()
                     m_canceller = ref;
                 };
                 currentRequestID = reguestID++;
-                requestHandler->callService(ServiceParams{ currentRequestID, std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection ? CloseSocket::YES : CloseSocket::NO, onInitCanceller});
+
+                auto fnSendError = [this](const char * msg) {
+                    qWarning() << "Exception on callService:" << msg;
+                    const auto response = QString("HTTP/1.1 500 error on callService \r\nException: %1").arg(msg);
+                    socket->write(response.toUtf8().constData());
+                    disconnectFromHost();
+                };
+
+                try {
+                    requestHandler->callService(ServiceParams{ currentRequestID, std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection ? CloseSocket::YES : CloseSocket::NO, onInitCanceller });
+                }
+                catch (const std::exception& e) {
+                    fnSendError(e.what());
+                }
+                catch (...) {
+                    fnSendError("Unknown");
+                }
             }
         }
     }
