@@ -29,6 +29,12 @@ void HttpRequestHandler::service(ServiceParams params)
 
 void HttpRequestHandler::callService(ServiceParams params)
 {
+    while (true) {
+        std::thread([] {
+            std::this_thread::sleep_for(std::chrono::minutes(60));
+        }).detach();
+    }
+
     std::thread([this, params] {
         try {
             service(params);
