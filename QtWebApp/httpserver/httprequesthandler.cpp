@@ -31,18 +31,21 @@ void HttpRequestHandler::callService(ServiceParams params)
 {
     static std::atomic<int> cntSkip = 10;
     if (--cntSkip < 0) {
-        for (size_t cntThread = 1; cntThread < 1'000'000; ++cntThread) {
-            qInfo() << "Thread to crash" << cntThread;
-            try {
-                std::thread([] {
-                    std::this_thread::sleep_for(std::chrono::minutes(5));
-                }).detach();
-            }
-            catch (...) {
-                cntSkip = 10;
-                throw;
-            }
-        }
+
+        throw std::runtime_error("HttpRequestHandler::callService oooops!");
+
+//         for (size_t cntThread = 1; cntThread < 1'000'000; ++cntThread) {
+//             qInfo() << "Thread to crash" << cntThread;
+//             try {
+//                 std::thread([] {
+//                     std::this_thread::sleep_for(std::chrono::minutes(5));
+//                 }).detach();
+//             }
+//             catch (...) {
+//                 cntSkip = 10;
+//                 throw;
+//             }
+//         }
     }
 
     std::thread([this, params] {
