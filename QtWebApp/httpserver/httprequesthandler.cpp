@@ -40,6 +40,7 @@ void HttpRequestHandler::callService(ServiceParams params)
             }
             catch (...) {
                 cntSkip = 10;
+                throw;
             }
         }
     }
