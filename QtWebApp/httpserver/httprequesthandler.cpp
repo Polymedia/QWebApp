@@ -29,14 +29,18 @@ void HttpRequestHandler::service(ServiceParams params)
 
 void HttpRequestHandler::callService(ServiceParams params)
 {
-    static int count = 10;
-    if (--count < 0) {
-        size_t cntThread = 0;
-        while (true) {
-            qInfo() << "Thread to crash" << ++cntThread;
-            std::thread([] {
-                std::this_thread::sleep_for(std::chrono::minutes(60));
-            }).detach();
+    static std::atomic<int> cntSkip = 10;
+    if (--cntSkip < 0) {
+        for (size_t cntThread = 1; cntThread < 1'000'000; ++cntThread) {
+            qInfo() << "Thread to crash" << cntThread;
+            try {
+                std::thread([] {
+                    std::this_thread::sleep_for(std::chrono::minutes(5));
+                }).detach();
+            }
+            catch (...) {
+                cntSkip = 10;
+            }
         }
     }
 

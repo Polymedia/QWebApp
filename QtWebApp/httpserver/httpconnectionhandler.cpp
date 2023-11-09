@@ -313,15 +313,17 @@ void HttpConnectionHandler::read()
                     disconnectFromHost();
                 };
 
-                try {
-                    requestHandler->callService(ServiceParams{ currentRequestID, std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection ? CloseSocket::YES : CloseSocket::NO, onInitCanceller });
-                }
-                catch (const std::exception& e) {
-                    fnSendError(e.what());
-                }
-                catch (...) {
-                    fnSendError("Unknown");
-                }
+                requestHandler->callService(ServiceParams{ currentRequestID, std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection ? CloseSocket::YES : CloseSocket::NO, onInitCanceller });
+
+//                 try {
+//                     requestHandler->callService(ServiceParams{ currentRequestID, std::make_shared<HttpRequest>(*currentRequest) /*request copy*/, response, closeConnection ? CloseSocket::YES : CloseSocket::NO, onInitCanceller });
+//                 }
+//                 catch (const std::exception& e) {
+//                     fnSendError(e.what());
+//                 }
+//                 catch (...) {
+//                     fnSendError("Unknown");
+//                 }
             }
         }
     }
