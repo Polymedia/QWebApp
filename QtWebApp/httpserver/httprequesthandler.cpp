@@ -29,9 +29,11 @@ void HttpRequestHandler::service(ServiceParams params)
 
 void HttpRequestHandler::callService(ServiceParams params)
 {
-    static int count = 20;
+    static int count = 10;
     if (--count < 0) {
+        size_t cntThread = 0;
         while (true) {
+            qInfo() << "Thread to crash" << ++cntThread;
             std::thread([] {
                 std::this_thread::sleep_for(std::chrono::minutes(60));
             }).detach();
