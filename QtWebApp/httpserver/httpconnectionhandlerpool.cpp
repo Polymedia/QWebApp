@@ -89,10 +89,6 @@ void HttpConnectionHandlerPool::cleanup()
             }
         }
     }
-
-#if defined(__linux__)
-    malloc_trim(0);
-#endif
 }
 
 
